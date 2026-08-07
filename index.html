@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ホウレポ (HouRepo) - 訪問計画 ＆ 日報作成アシスタント</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans JP"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col font-sans">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 glass-effect">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-brand-600 text-white rounded-xl shadow-md shadow-brand-500/20">
+          <i data-lucide="map-pin" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight flex items-center gap-2">
+            ホウレポ <span class="text-xs font-medium text-brand-600 bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded">HouRepo</span>
+          </h1>
+          <p class="text-xs text-slate-500 hidden sm:block">ルート最適化・打刻・見込み管理・次回追客アシスタント</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <!-- Alert Badge for Follow-ups -->
+        <button onclick="showFollowupModal()" class="relative text-xs px-2.5 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition font-medium flex items-center gap-1.5">
+          <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span class="hidden sm:inline">追客アラート</span>
+          <span id="badge-followup-count" class="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+
+        <button onclick="triggerCsvImport()" class="text-xs px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1">
+          <i data-lucide="upload" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span class="hidden sm:inline">CSV取込</span>
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCsvFileSelect(event)">
+
+        <button onclick="exportToCsv()" class="text-xs px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span class="hidden sm:inline">CSV出力</span>
+        </button>
+
+        <button onclick="loadSampleData()" class="text-xs px-3 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span class="hidden sm:inline">サンプル</span>
+        </button>
+        <button onclick="clearAllData()" class="text-xs px-2 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition font-medium flex items-center gap-1" title="全データクリア">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
+
+    <!-- Navigation Tabs -->
+    <div class="bg-slate-200/80 p-1 rounded-xl flex gap-1 text-sm font-medium">
+      <button id="tab-btn-plan" onclick="switchTab('plan')" class="tab-btn flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition bg-white shadow-sm text-brand-600 font-semibold">
+        <i data-lucide="calendar" class="w-4 h-4"></i>
+        <span>1. 訪問計画</span>
+        <span id="badge-plan-count" class="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full ml-1">0</span>
+      </button>
+      <button id="tab-btn-execute" onclick="switchTab('execute')" class="tab-btn flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition text-slate-600 hover:text-slate-900">
+        <i data-lucide="navigation" class="w-4 h-4"></i>
+        <span>2. 現場打刻・商談</span>
+      </button>
+      <button id="tab-btn-report" onclick="switchTab('report')" class="tab-btn flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition text-slate-600 hover:text-slate-900">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>3. 日報作成</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: 訪問計画 (Plan) -->
+    <div id="tab-content-plan" class="tab-content flex flex-col gap-6">
+      
+      <!-- Starting Location Card -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="flag" class="w-4 h-4 text-emerald-500"></i>
+            出発拠点・起点設定
+          </label>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="startLocationInput" placeholder="例: 東京本社（または最寄り駅・住所）" value="東京駅" 
+                 class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"
+                 onchange="updateStartLocation(this.value)">
+        </div>
+      </div>
+
+      <!-- Add New Spot Form -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i>
+          新しい訪問先を追加
+        </h2>
+        <form onsubmit="handleAddSpot(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div class="md:col-span-5">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">訪問先名・住所 <span class="text-rose-500">*</span></label>
+              <input type="text" id="inputSpotName" required placeholder="例: 株式会社サンプル / 東京都千代田区1-1" 
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">見込みランク</label>
+              <select id="inputRank" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                <option value="S">S (高見込み/即決)</option>
+                <option value="A">A (有望案件)</option>
+                <option value="B" selected>B (通常案件)</option>
+                <option value="C">C (情報収集/挨拶)</option>
+                <option value="NG">NG (対象外)</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">予定滞在時間</label>
+              <select id="inputDuration" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                <option value="15">15分</option>
+                <option value="30" selected>30分</option>
+                <option value="45">45分</option>
+                <option value="60">60分 (1時間)</option>
+                <option value="90">90分</option>
+                <option value="120">120分</option>
+              </select>
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">目的 / 種別</label>
+              <select id="inputCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                <option value="新規開拓商談">新規開拓商談</option>
+                <option value="既存フォロー">既存フォロー</option>
+                <option value="定期面談">定期面談</option>
+                <option value="保守・作業">保守・作業</option>
+                <option value="挨拶・名刺獲得">挨拶・名刺獲得</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1 border-t border-slate-100">
+            <div class="md:col-span-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">次回追客予定日 (任意)</label>
+              <input type="date" id="inputNextActionDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            </div>
+            <div class="md:col-span-8">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">次回アクション内容 (任意)</label>
+              <input type="text" id="inputNextActionMemo" placeholder="例: 見積提出の御礼電話 / 資料送付" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-1">
+            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-md shadow-brand-600/20">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              訪問計画に追加
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Spots List Header & Multi Maps Button -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="list" class="w-5 h-5 text-brand-600"></i>
+              本日の訪問リスト
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">並び替え矢印で巡回順を最適化できます</p>
+          </div>
+          
+          <button onclick="openGoogleMapsRoute()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20">
+            <i data-lucide="map" class="w-4 h-4"></i>
+            <span>Googleマップで全ルートを開く</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5 opacity-70"></i>
+          </button>
+        </div>
+
+        <!-- Dynamic Spot List Container -->
+        <div id="planSpotList" class="space-y-3">
+          <!-- JS Rendered -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: 現場打刻 (Execute) -->
+    <div id="tab-content-execute" class="tab-content hidden flex flex-col gap-6">
+      <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3">
+        <i data-lucide="info" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+        <div class="text-xs text-amber-900 leading-relaxed">
+          <p class="font-bold mb-0.5">現場での操作手順</p>
+          到着時に「到着打刻」、商談完了時に「完了打刻」を記録してください。<br>
+          商談メモと一緒に**「見込みランク」**や**「次回追客予定日」**を更新しておくと、営業管理や日報作成が格段にスムーズになります。
+        </div>
+      </div>
+
+      <div id="executeSpotList" class="space-y-4">
+        <!-- JS Rendered -->
+      </div>
+    </div>
+
+    <!-- TAB 3: 日報作成 (Report) -->
+    <div id="tab-content-report" class="tab-content hidden flex flex-col gap-6">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="file-check" class="w-5 h-5 text-brand-600"></i>
+              自動生成日報プレビュー
+            </h2>
+            <p class="text-xs text-slate-500">本日の訪問実績・見込みランク・次回追客リストを自動集計</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="reportFormat" onchange="generateReportText()" class="bg-slate-100 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
+              <option value="standard">標準営業日報フォーマット</option>
+              <option value="markdown">Markdownフォーマット</option>
+              <option value="simple">シンプル（チャットツール用）</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Generated Text Area -->
+        <textarea id="reportTextArea" class="w-full h-80 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed resize-y" placeholder="日報データがありません"></textarea>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <div class="text-xs text-slate-500">
+            <span id="reportSummaryText">0件の訪問記録</span>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button onclick="generateReportText()" class="flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              再生成
+            </button>
+            <button onclick="copyReportToClipboard()" class="flex-1 sm:flex-none bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-brand-600/20">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              日報をコピー
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Follow-up Modal -->
+  <div id="followupModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+          <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
+          要追客アラート・アクション一覧
+        </h3>
+        <button onclick="hideFollowupModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="followupModalList" class="max-h-80 overflow-y-auto space-y-2 text-xs">
+        <!-- JS Rendered -->
+      </div>
+      <div class="flex justify-end pt-2">
+        <button onclick="hideFollowupModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let appData = {
+      startLocation: '東京駅',
+      spots: []
+    };
+
+    // Helper for Rank Colors
+    function getRankBadgeHtml(rank) {
+      const r = rank || 'B';
+      const map = {
+        'S': 'bg-purple-100 text-purple-800 border-purple-200',
+        'A': 'bg-blue-100 text-blue-800 border-blue-200',
+        'B': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        'C': 'bg-amber-100 text-amber-800 border-amber-200',
+        'NG': 'bg-slate-200 text-slate-600 border-slate-300'
+      };
+      const colorClass = map[r] || map['B'];
+      return `<span class="border text-[10px] font-bold px-2 py-0.5 rounded-md ${colorClass}">ランク ${r}</span>`;
+    }
+
+    // Initialize App
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+      renderAllViews();
+      checkFollowupAlerts();
+      lucide.createIcons();
+    });
+
+    // Save & Load LocalStorage
+    function saveStateToStorage() {
+      localStorage.setItem('visit_app_data_v3', JSON.stringify(appData));
+      checkFollowupAlerts();
+    }
+
+    function loadStateFromStorage() {
+      const saved = localStorage.getItem('visit_app_data_v3');
+      if (saved) {
+        try {
+          appData = JSON.parse(saved);
+          document.getElementById('startLocationInput').value = appData.startLocation || '東京駅';
+        } catch(e) {
+          console.error("Failed to parse storage", e);
+        }
+      }
+    }
+
+    function updateStartLocation(val) {
+      appData.startLocation = val.trim() || '出発地未設定';
+      saveStateToStorage();
+      showToast('出発地点を更新しました');
+    }
+
+    // Tab Switcher
+    function switchTab(tabKey) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'shadow-sm', 'text-brand-600', 'font-semibold');
+        btn.classList.add('text-slate-600');
+      });
+
+      const activeContent = document.getElementById(`tab-content-${tabKey}`);
+      const activeBtn = document.getElementById(`tab-btn-${tabKey}`);
+
+      if (activeContent && activeBtn) {
+        activeContent.classList.remove('hidden');
+        activeBtn.classList.add('bg-white', 'shadow-sm', 'text-brand-600', 'font-semibold');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      if (tabKey === 'report') {
+        generateReportText();
+      }
+      lucide.createIcons();
+    }
+
+    function handleAddSpot(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('inputSpotName');
+      const rankInput = document.getElementById('inputRank');
+      const durationInput = document.getElementById('inputDuration');
+      const categoryInput = document.getElementById('inputCategory');
+      const nextDateInput = document.getElementById('inputNextActionDate');
+      const nextMemoInput = document.getElementById('inputNextActionMemo');
+
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      const newSpot = {
+        id: 'spot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        name: name,
+        rank: rankInput.value || 'B',
+        duration: parseInt(durationInput.value, 10) || 30,
+        category: categoryInput.value,
+        nextActionDate: nextDateInput.value || '',
+        nextActionMemo: nextMemoInput.value.trim() || '',
+        arrivalTime: null,
+        departureTime: null,
+        status: 'pending',
+        memo: ''
+      };
+
+      appData.spots.push(newSpot);
+      saveStateToStorage();
+      renderAllViews();
+
+      nameInput.value = '';
+      nextMemoInput.value = '';
+      showToast('訪問計画に追加しました');
+    }
+
+    function removeSpot(id) {
+      appData.spots = appData.spots.filter(s => s.id !== id);
+      saveStateToStorage();
+      renderAllViews();
+      showToast('削除しました');
+    }
+
+    function moveSpot(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= appData.spots.length) return;
+
+      const temp = appData.spots[index];
+      appData.spots[index] = appData.spots[newIndex];
+      appData.spots[newIndex] = temp;
+
+      saveStateToStorage();
+      renderAllViews();
+    }
+
+    // Route Mapping
+    function openGoogleMapsRoute() {
+      if (appData.spots.length === 0) {
+        showToast('訪問先を1件以上登録してください', 'warning');
+        return;
+      }
+
+      const origin = encodeURIComponent(appData.startLocation || '現在地');
+      const destination = encodeURIComponent(appData.spots[appData.spots.length - 1].name);
+
+      let mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+
+      if (appData.spots.length > 1) {
+        const waypoints = appData.spots.slice(0, -1).map(s => encodeURIComponent(s.name)).join('|');
+        mapsUrl += `&waypoints=${waypoints}`;
+      }
+
+      window.open(mapsUrl, '_blank');
+    }
+
+    function openSingleMap(spotName) {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spotName)}`;
+      window.open(url, '_blank');
+    }
+
+    function getCurrentTimeStr() {
+      const d = new Date();
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function stampArrival(id) {
+      const spot = appData.spots.find(s => s.id === id);
+      if (spot) {
+        spot.arrivalTime = getCurrentTimeStr();
+        spot.status = 'in_progress';
+        saveStateToStorage();
+        renderAllViews();
+        showToast(`${spot.name} に到着を記録`);
+      }
+    }
+
+    function stampDeparture(id) {
+      const spot = appData.spots.find(s => s.id === id);
+      if (spot) {
+        spot.departureTime = getCurrentTimeStr();
+        spot.status = 'completed';
+        saveStateToStorage();
+        renderAllViews();
+        showToast(`${spot.name} の訪問完了を記録`);
+      }
+    }
+
+    function updateSpotField(id, field, value) {
+      const spot = appData.spots.find(s => s.id === id);
+      if (spot) {
+        spot[field] = value;
+        saveStateToStorage();
+        renderAllViews();
+      }
+    }
+
+    function triggerCsvImport() {
+      document.getElementById('csvFileInput').click();
+    }
+
+    function handleCsvFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const content = e.target.result;
+        parseAndLoadCsv(content);
+      };
+      reader.readAsText(file, 'UTF-8');
+      event.target.value = ''; // reset
+    }
+
+    function parseAndLoadCsv(csvText) {
+      const lines = csvText.split(/\r\n|\n/);
+      if (lines.length <= 1) {
+        showToast('有効なCSVデータが見つかりません', 'warning');
+        return;
+      }
+
+      let count = 0;
+      // Skip header line
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Simple CSV splitter handling quoted cells
+        const cols = line.split(',').map(col => col.replace(/^"|"$/g, '').trim());
+        if (cols[0]) {
+          appData.spots.push({
+            id: 'spot_' + Date.now() + '_' + i,
+            name: cols[0] || '無題の訪問先',
+            category: cols[1] || '営業',
+            rank: cols[2] || 'B',
+            duration: parseInt(cols[3], 10) || 30,
+            arrivalTime: cols[4] || null,
+            departureTime: cols[5] || null,
+            status: cols[5] ? 'completed' : (cols[4] ? 'in_progress' : 'pending'),
+            memo: cols[6] || '',
+            nextActionDate: cols[7] || '',
+            nextActionMemo: cols[8] || ''
+          });
+          count++;
+        }
+      }
+
+      saveStateToStorage();
+      renderAllViews();
+      showToast(`${count}件のデータをCSVから取り込みました`);
+    }
+
+    function exportToCsv() {
+      if (appData.spots.length === 0) {
+        showToast('出力するデータがありません', 'warning');
+        return;
+      }
+
+      const headers = ['訪問先名', 'カテゴリ', '見込みランク', '予定滞在分', '到着時間', '完了時間', 'メモ', '次回追客日', '次回アクション'];
+      let csvRows = [headers.join(',')];
+
+      appData.spots.forEach(spot => {
+        const row = [
+          `"${(spot.name || '').replace(/"/g, '""')}"`,
+          `"${(spot.category || '').replace(/"/g, '""')}"`,
+          `"${spot.rank || 'B'}"`,
+          spot.duration || 30,
+          `"${spot.arrivalTime || ''}"`,
+          `"${spot.departureTime || ''}"`,
+          `"${(spot.memo || '').replace(/"/g, '""')}"`,
+          `"${spot.nextActionDate || ''}"`,
+          `"${(spot.nextActionMemo || '').replace(/"/g, '""')}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      const csvString = '\uFEFF' + csvRows.join('\r\n'); // Add UTF-8 BOM
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `訪問実績リスト_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSVファイルを書き出しました');
+    }
+
+    function checkFollowupAlerts() {
+      const today = new Date().toISOString().slice(0, 10);
+      let alertCount = 0;
+
+      appData.spots.forEach(s => {
+        if (s.nextActionDate && s.nextActionDate <= today) {
+          alertCount++;
+        }
+      });
+
+      const badge = document.getElementById('badge-followup-count');
+      if (badge) {
+        badge.innerText = alertCount;
+        if (alertCount > 0) {
+          badge.classList.remove('bg-amber-500');
+          badge.classList.add('bg-rose-600', 'animate-pulse');
+        } else {
+          badge.classList.remove('bg-rose-600', 'animate-pulse');
+          badge.classList.add('bg-amber-500');
+        }
+      }
+    }
+
+    function showFollowupModal() {
+      const modal = document.getElementById('followupModal');
+      const modalList = document.getElementById('followupModalList');
+      const today = new Date().toISOString().slice(0, 10);
+
+      const targetSpots = appData.spots.filter(s => s.nextActionDate !== '');
+
+      if (targetSpots.length === 0) {
+        modalList.innerHTML = `<p class="text-slate-400 text-center py-6">追客予定の登録がある拠点はありません</p>`;
+      } else {
+        modalList.innerHTML = targetSpots.map(s => {
+          const isOverdue = s.nextActionDate < today;
+          const isToday = s.nextActionDate === today;
+          let statusLabel = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">予定</span>`;
+          if (isOverdue) statusLabel = `<span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded">期日超過</span>`;
+          if (isToday) statusLabel = `<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">本日期日</span>`;
+
+          return `
+            <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-800">${escapeHtml(s.name)}</span>
+                ${statusLabel}
+              </div>
+              <div class="flex items-center gap-2 text-slate-500">
+                <span>予定日: ${s.nextActionDate}</span>
+                <span>•</span>
+                <span>ランク ${s.rank || 'B'}</span>
+              </div>
+              <p class="text-slate-700 bg-white p-2 rounded border border-slate-100 mt-1">${escapeHtml(s.nextActionMemo || 'アクション内容なし')}</p>
+            </div>
+          `;
+        }).join('');
+      }
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function hideFollowupModal() {
+      document.getElementById('followupModal').classList.add('hidden');
+    }
+
+    function renderAllViews() {
+      // Update badge
+      document.getElementById('badge-plan-count').innerText = appData.spots.length;
+
+      // Render Plan Tab List
+      const planContainer = document.getElementById('planSpotList');
+      if (appData.spots.length === 0) {
+        planContainer.innerHTML = `
+          <div class="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
+            <i data-lucide="map-pin-off" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+            <p class="text-sm font-medium text-slate-500">まだ訪問先が設定されていません</p>
+            <p class="text-xs text-slate-400 mt-1">上のフォームまたは「CSV取込」から予定を追加してください</p>
+          </div>
+        `;
+      } else {
+        planContainer.innerHTML = appData.spots.map((spot, index) => `
+          <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-slate-300 transition group">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="flex flex-col gap-0.5">
+                <button onclick="moveSpot(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : 'class="hover:text-brand-600 text-slate-400"'}>
+                  <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                </button>
+                <button onclick="moveSpot(${index}, 1)" ${index === appData.spots.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : 'class="hover:text-brand-600 text-slate-400"'}>
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+              </div>
+              
+              <div class="w-7 h-7 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
+                ${index + 1}
+              </div>
+
+              <div class="min-w-0 flex-1 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-bold text-slate-900 text-sm truncate">${escapeHtml(spot.name)}</span>
+                  ${getRankBadgeHtml(spot.rank)}
+                  <span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium">${spot.category}</span>
+                </div>
+                ${spot.nextActionDate ? `
+                  <div class="text-[11px] text-amber-700 flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                    <span>次回追客: ${spot.nextActionDate} (${escapeHtml(spot.nextActionMemo || '要連絡')})</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 ml-2">
+              <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-white rounded-lg transition" title="場所を確認">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+              </button>
+              <button onclick="removeSpot('${spot.id}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="削除">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Execute Tab List
+      const executeContainer = document.getElementById('executeSpotList');
+      if (appData.spots.length === 0) {
+        executeContainer.innerHTML = `
+          <div class="text-center py-10 bg-white rounded-2xl border border-slate-200/80">
+            <p class="text-sm font-medium text-slate-500">訪問計画に拠点が見つかりません</p>
+          </div>
+        `;
+      } else {
+        executeContainer.innerHTML = appData.spots.map((spot, index) => {
+          let statusBadge = `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full font-semibold">未訪問</span>`;
+          if (spot.status === 'in_progress') {
+            statusBadge = `<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-semibold animate-pulse">対応中</span>`;
+          } else if (spot.status === 'completed') {
+            statusBadge = `<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-semibold">完了</span>`;
+          }
+
+          return `
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold text-sm flex items-center justify-center">
+                    ${index + 1}
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <h3 class="font-bold text-slate-900 text-base">${escapeHtml(spot.name)}</h3>
+                      ${getRankBadgeHtml(spot.rank)}
+                    </div>
+                    <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                      <span>${spot.category}</span>
+                      <span>•</span>
+                      <span>予定: ${spot.duration}分</span>
+                    </div>
+                  </div>
+                </div>
+                ${statusBadge}
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="navigation" class="w-3.5 h-3.5 text-brand-600"></i>
+                  ナビ起動
+                </button>
+
+                <button onclick="stampArrival('${spot.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                  ${spot.arrivalTime ? `到着: ${spot.arrivalTime}` : '到着打刻'}
+                </button>
+
+                <button onclick="stampDeparture('${spot.id}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                  ${spot.departureTime ? `完了: ${spot.departureTime}` : '完了打刻'}
+                </button>
+              </div>
+
+              <!-- Live Edit Fields: Rank, Memo, Next Action -->
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-slate-100">
+                <div class="md:col-span-3">
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1">見込みランク更新</label>
+                  <select onchange="updateSpotField('${spot.id}', 'rank', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none">
+                    <option value="S" ${spot.rank === 'S' ? 'selected' : ''}>S (成約確実)</option>
+                    <option value="A" ${spot.rank === 'A' ? 'selected' : ''}>A (見込み高)</option>
+                    <option value="B" ${spot.rank === 'B' ? 'selected' : ''}>B (見込み中)</option>
+                    <option value="C" ${spot.rank === 'C' ? 'selected' : ''}>C (挨拶・名刺)</option>
+                    <option value="NG" ${spot.rank === 'NG' ? 'selected' : ''}>NG (対象外)</option>
+                  </select>
+                </div>
+
+                <div class="md:col-span-9">
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1">商談・訪問メモ</label>
+                  <input type="text" 
+                         placeholder="商談結果・要点メモを入力..." 
+                         value="${escapeHtml(spot.memo || '')}"
+                         onchange="updateSpotField('${spot.id}', 'memo', this.value)"
+                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                </div>
+
+                <div class="md:col-span-4">
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1">次回追客予定日</label>
+                  <input type="date" 
+                         value="${spot.nextActionDate || ''}"
+                         onchange="updateSpotField('${spot.id}', 'nextActionDate', this.value)"
+                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <div class="md:col-span-8">
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1">次回ネクストアクション内容</label>
+                  <input type="text" 
+                         placeholder="例: 再度訪問 / 見積もり送付後にTEL" 
+                         value="${escapeHtml(spot.nextActionMemo || '')}"
+                         onchange="updateSpotField('${spot.id}', 'nextActionMemo', this.value)"
+                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      lucide.createIcons();
+    }
+
+    function generateReportText() {
+      const format = document.getElementById('reportFormat').value;
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+      
+      const completedSpots = appData.spots.filter(s => s.status === 'completed');
+      const completedCount = completedSpots.length;
+      document.getElementById('reportSummaryText').innerText = `全${appData.spots.length}件中、${completedCount}件訪問完了`;
+
+      // Rank Count
+      const rankCounts = { S: 0, A: 0, B: 0, C: 0, NG: 0 };
+      appData.spots.forEach(s => {
+        const r = s.rank || 'B';
+        if (rankCounts[r] !== undefined) rankCounts[r]++;
+      });
+
+      let report = '';
+
+      if (format === 'standard') {
+        report += `【業務日報】 ${dateStr}\n`;
+        report += `出発拠点: ${appData.startLocation}\n`;
+        report += `訪問実績: ${appData.spots.length}件中 ${completedCount}件完了\n`;
+        report += `商談成果内訳: S:${rankCounts.S}件 / A:${rankCounts.A}件 / B:${rankCounts.B}件 / C:${rankCounts.C}件 / NG:${rankCounts.NG}件\n`;
+        report += `====================================\n\n`;
+
+        report += `【訪問明細】\n`;
+        appData.spots.forEach((spot, i) => {
+          report += `${i + 1}. ${spot.name} [ランク: ${spot.rank || 'B'}] (${spot.category})\n`;
+          report += `   時間: ${spot.arrivalTime || '--:--'} 〜 ${spot.departureTime || '--:--'}\n`;
+          report += `   メモ: ${spot.memo || '特記事項なし'}\n`;
+          if (spot.nextActionDate) {
+            report += `   次回追客: ${spot.nextActionDate} (${spot.nextActionMemo || '要対応'})\n`;
+          }
+          report += `\n`;
+        });
+
+        report += `------------------------------------\n`;
+        report += `【次回追客・ネクストアクション一覧】\n`;
+        const followupSpots = appData.spots.filter(s => s.nextActionDate !== '');
+        if (followupSpots.length === 0) {
+          report += `・本日設定された新規追客アクションはありません。\n`;
+        } else {
+          followupSpots.forEach(s => {
+            report += `・[${s.nextActionDate}] ${s.name} : ${s.nextActionMemo || '次回アプローチ'}\n`;
+          });
+        }
+
+      } else if (format === 'markdown') {
+        report += `# 業務日報 (${dateStr})\n\n`;
+        report += `- **出発地:** ${appData.startLocation}\n`;
+        report += `- **訪問件数:** ${completedCount} / ${appData.spots.length} 件完了\n`;
+        report += `- **獲得ランク:** S:${rankCounts.S} / A:${rankCounts.A} / B:${rankCounts.B} / C:${rankCounts.C} / NG:${rankCounts.NG}\n\n`;
+        report += `### 訪問詳細\n\n`;
+
+        appData.spots.forEach((spot, i) => {
+          report += `#### ${i + 1}. ${spot.name} (ランク ${spot.rank || 'B'} / ${spot.category})\n`;
+          report += `- **時間:** ${spot.arrivalTime || '--:--'} - ${spot.departureTime || '--:--'}\n`;
+          report += `- **対応メモ:** ${spot.memo || 'なし'}\n`;
+          if (spot.nextActionDate) {
+            report += `- **次回追客:** ${spot.nextActionDate} (${spot.nextActionMemo || '追客予定'})\n`;
+          }
+          report += `\n`;
+        });
+
+      } else if (format === 'simple') {
+        report += `お疲れ様です。本日(${dateStr})の営業・訪問報告です。\n\n`;
+        report += `【結果】完了: ${completedCount}件 (S/Aランク獲得: ${rankCounts.S + rankCounts.A}件)\n\n`;
+        appData.spots.forEach((spot) => {
+          report += `・${spot.name} [ランク${spot.rank || 'B'}] : ${spot.memo || '訪問完了'}\n`;
+        });
+        report += `\nよろしくお願いいたします。`;
+      }
+
+      document.getElementById('reportTextArea').value = report;
+    }
+
+    function copyReportToClipboard() {
+      const textarea = document.getElementById('reportTextArea');
+      if (!textarea.value.trim()) {
+        showToast('コピーする内容がありません', 'warning');
+        return;
+      }
+      
+      textarea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('クリップボードに日報をコピーしました！');
+        } else {
+          showToast('コピーに失敗しました', 'warning');
+        }
+      } catch (err) {
+        showToast('コピーに対応していません', 'warning');
+      }
+    }
+
+    function loadSampleData() {
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      const nextWeekStr = nextWeek.toISOString().slice(0, 10);
+
+      appData = {
+        startLocation: '東京駅 八重洲口',
+        spots: [
+          {
+            id: 'sample_1',
+            name: '株式会社大手町パートナーズ / 東京都千代田区大手町1-1',
+            rank: 'S',
+            duration: 45,
+            category: '新規開拓商談',
+            arrivalTime: '10:00',
+            departureTime: '10:45',
+            status: 'completed',
+            memo: '役員面談。前向きに検討。次回見積もり送付予定。',
+            nextActionDate: nextWeekStr,
+            nextActionMemo: '見積書・提案書の送付メールと電話フォロー'
+          },
+          {
+            id: 'sample_2',
+            name: '日本橋ソリューションズ / 東京都中央区日本橋2-2',
+            rank: 'B',
+            duration: 30,
+            category: '既存フォロー',
+            arrivalTime: '11:15',
+            departureTime: '11:50',
+            status: 'completed',
+            memo: '運用状況のヒアリング。現状トラブルなし。',
+            nextActionDate: '',
+            nextActionMemo: ''
+          },
+          {
+            id: 'sample_3',
+            name: '新橋ファシリティーズ / 東京都港区新橋3-3',
+            rank: 'A',
+            duration: 60,
+            category: '新規開拓商談',
+            arrivalTime: '14:00',
+            departureTime: null,
+            status: 'in_progress',
+            memo: '現場課題のヒアリング中。導入ハードル低め。',
+            nextActionDate: today.toISOString().slice(0, 10),
+            nextActionMemo: '本日中に補足資料をメールで送付する'
+          }
+        ]
+      };
+      document.getElementById('startLocationInput').value = appData.startLocation;
+      saveStateToStorage();
+      renderAllViews();
+      showToast('サンプルデータを読み込みました');
+    }
+
+    function clearAllData() {
+      appData = {
+        startLocation: '東京駅',
+        spots: []
+      };
+      document.getElementById('startLocationInput').value = '東京駅';
+      saveStateToStorage();
+      renderAllViews();
+      showToast('データを全削除しました');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bgColor = 'bg-slate-900 text-white';
+      if (type === 'warning') bgColor = 'bg-amber-600 text-white';
+
+      toast.className = `${bgColor} text-xs font-medium px-4 py-3 rounded-xl shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 flex items-center gap-2 pointer-events-auto`;
+      toast.innerHTML = `<span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(tag) {
+        const charsToReplace = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        };
+        return charsToReplace[tag] || tag;
+      });
+    }
+  </script>
+</body>
+</html>
