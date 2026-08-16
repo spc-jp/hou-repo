@@ -146,11 +146,35 @@
         </div>
       </div>
 
+      <!-- AI Search & Auto List Generator Card -->
+      <div class="bg-gradient-to-br from-indigo-900 via-brand-900 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-indigo-700/50 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 bg-indigo-500/30 rounded-lg backdrop-blur-sm border border-indigo-400/30">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+            </div>
+            <h2 class="font-bold text-sm sm:text-base text-white">AIエリアターゲット自動抽出 (例: 越谷市 税理士事務所)</h2>
+          </div>
+          <span class="text-[10px] bg-indigo-500/40 border border-indigo-300/30 px-2 py-0.5 rounded-full font-medium text-indigo-100">上位5件を一括取得</span>
+        </div>
+        <p class="text-xs text-indigo-200 leading-relaxed">
+          地域と業種（例：「越谷市 税理士事務所」「草加市 工務店」など）を入力すると、最新のWeb検索から自動で上位5件をピックアップして訪問計画にセットします。
+        </p>
+        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+          <input type="text" id="aiSearchInput" value="越谷市 税理士事務所" placeholder="例: 越谷市 税理士事務所" 
+                 class="flex-1 bg-white/10 border border-white/20 text-white placeholder-indigo-300/60 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+          <button id="aiSearchBtn" onclick="handleAiSearch()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span>上位5件を取得して追加</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Add New Spot Form -->
       <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <h2 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
           <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i>
-          新しい訪問先を追加
+          新しい訪問先を手動追加
         </h2>
         <form onsubmit="handleAddSpot(event)" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
@@ -989,6 +1013,91 @@
       saveStateToStorage();
       renderAllViews();
       showToast('データを全削除しました');
+    }
+
+    // AI Area Search Function
+    async function handleAiSearch() {
+      const keywordInput = document.getElementById('aiSearchInput');
+      const keyword = keywordInput.value.trim();
+      if (!keyword) {
+        showToast('検索キーワードを入力してください', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('aiSearchBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>AI検索・取得中...</span>`;
+      lucide.createIcons();
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const systemPrompt = "あなたは営業アプローチ支援アシスタントです。ユーザー指定の検索キーワード（例: 越谷市 税理士事務所）に基づいて、実在する評価の高い上位5件の事業所名と住所・エリア情報を取得し、指定のJSON形式でのみレスポンスを返してください。";
+        const userQuery = `「${keyword}」の上位5件の事業所名と住所・概要を取得してください。JSON配列の形式のみで返してください。フォーマット: [{"name": "〇〇税理士事務所", "address": "埼玉県越谷市...", "category": "税理士事務所"}]`;
+
+        const payload = {
+          contents: [{ parts: [{ text: userQuery }] }],
+          tools: [{ "google_search": {} }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        const candidateText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        // Extract JSON array from LLM response
+        const jsonMatch = candidateText.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const items = JSON.parse(jsonMatch[0]);
+          let addedCount = 0;
+
+          items.forEach(item => {
+            if (item.name) {
+              const fullName = item.address ? `${item.name} (${item.address})` : item.name;
+              appData.spots.push({
+                id: 'spot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                name: fullName,
+                rank: 'B',
+                duration: 30,
+                category: item.category || '新規開拓',
+                nextActionDate: '',
+                nextActionMemo: '',
+                arrivalTime: null,
+                departureTime: null,
+                status: 'pending',
+                memo: ''
+              });
+              addedCount++;
+            }
+          });
+
+          if (addedCount > 0) {
+            saveStateToStorage();
+            renderAllViews();
+            showToast(`「${keyword}」から上位${addedCount}件を訪問計画に追加しました！`);
+          } else {
+            showToast('事業所の抽出に失敗しました', 'warning');
+          }
+        } else {
+          // Fallback if structured parsing failed
+          showToast('検索結果の解析に失敗しました。キーワードを変えてお試しください。', 'warning');
+        }
+
+      } catch (err) {
+        console.error("AI Search error:", err);
+        showToast('AI検索処理中にエラーが発生しました', 'warning');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        lucide.createIcons();
+      }
     }
 
     function showToast(message, type = 'info') {
