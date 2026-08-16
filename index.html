@@ -91,9 +91,10 @@
           <span class="hidden sm:inline">CSV出力</span>
         </button>
 
-        <button onclick="loadSampleData()" class="text-xs px-3 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1">
-          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
-          <span class="hidden sm:inline">サンプル</span>
+        <!-- 使い方ボタン (サンプルボタンから変更) -->
+        <button onclick="showHelpModal()" class="text-xs px-3 py-1.5 text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 rounded-lg transition font-medium flex items-center gap-1 shadow-sm">
+          <i data-lucide="help-circle" class="w-3.5 h-3.5 text-brand-600"></i>
+          <span class="hidden sm:inline">使い方</span>
         </button>
 
         <button onclick="clearAllData()" class="text-xs px-2 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition font-medium flex items-center gap-1" title="全データクリア">
@@ -326,6 +327,83 @@
 
   </main>
 
+  <!-- Usage Help Modal (使い方ガイドモーダル) -->
+  <div id="helpModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+          <i data-lucide="help-circle" class="w-5 h-5 text-brand-600"></i>
+          ホウレポ アプリの使い方ガイド
+        </h3>
+        <button onclick="hideHelpModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <div class="overflow-y-auto space-y-4 pr-1 text-xs sm:text-sm text-slate-700 leading-relaxed flex-1">
+        
+        <!-- App Purpose -->
+        <div class="bg-brand-50/70 border border-brand-100 p-4 rounded-xl space-y-1">
+          <h4 class="font-bold text-brand-900 flex items-center gap-1.5 text-sm">
+            <i data-lucide="target" class="w-4 h-4 text-brand-600"></i>
+            アプリの目的
+          </h4>
+          <p class="text-slate-700 text-xs leading-normal">
+            営業・訪問活動における<b>「訪問先選定」「移動ルート最適化」「現場での直前確認・打刻・メモ」「自動日報作成」「次回追客管理」</b>をスマホひとつで効率化し、日報作成の手間削減と営業成果（成約率）向上を同時に実現するアシスタントツールです。
+          </p>
+        </div>
+
+        <!-- Flow Steps -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5 border-b border-slate-100 pb-1">
+            <i data-lucide="play-circle" class="w-4 h-4 text-emerald-600"></i>
+            一日の使い方の流れ（5ステップ）
+          </h4>
+
+          <ul class="space-y-2.5 text-xs">
+            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span class="font-bold text-brand-700 block mb-0.5">① 出発地設定 ＆ AIターゲット自動抽出</span>
+              「出発拠点・起点設定」に自社や出発地を入力します。<br>
+              AI検索（例：<code>越谷市 税理士事務所</code>）を実行すると、Googleから上位5件の実在事業所（名前・住所・TEL・URL）を一括抽出して訪問リストに自動登録します。
+            </li>
+
+            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span class="font-bold text-brand-700 block mb-0.5">② 効率化ルートをGoogleマップで確認</span>
+              「Googleマップで全ルートを開く」ボタンを押すと、すべての訪問先を一番効率的な順序で移動できるナビゲーションが開きます。
+            </li>
+
+            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span class="font-bold text-brand-700 block mb-0.5">③ 現場対応（直前TEL・ワンタップ打刻・商談メモ記録）</span>
+              「2. 現場打刻・商談」タブを開きます。<br>
+              ・直前確認: 緑の<b>電話ボタン</b>で直前にアポ確認。<br>
+              ・打刻: 到着時に<b>「到着打刻」</b>、完了時に<b>「完了打刻」</b>。<br>
+              ・メモ: 商談結果や感触（S/A/B/Cランク）、次回アクションを入力します。
+            </li>
+
+            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span class="font-bold text-brand-700 block mb-0.5">④ 営業日報の自動生成・コピー</span>
+              「3. 日報作成」タブを開くと、本日の訪問先、打刻時間、見込みランク、商談メモが綺麗にレイアウトされた日報テキストが自動完成します。「日報をコピー」で社内チャットやメールに即座に貼り付け可能です。
+            </li>
+
+            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span class="font-bold text-brand-700 block mb-0.5">⑤ CSVでバックアップ保存 ＆ 繰り返し訪問（追客）</span>
+              ・<b>CSV出力</b>: 本日の実績や商談メモをCSVファイルとして保存できます。<br>
+              ・<b>CSV取込</b>: 保存したファイルを次回「CSV取込」すれば、見込み客データ（ランクや次回アプローチ日）を引き継いで繰り返し訪問・継続フォローを行えます。<br>
+              ・<b>追客アラート</b>: 設定した次回追客日になると、画面上のアラート（通知）が点灯してお知らせします。
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-100 flex-shrink-0">
+        <button onclick="hideHelpModal()" class="bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs px-5 py-2.5 rounded-xl transition">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Follow-up Modal -->
   <div id="followupModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -408,6 +486,15 @@
         renderAllViews();
         showToast('全データをクリアしました');
       }
+    }
+
+    function showHelpModal() {
+      document.getElementById('helpModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function hideHelpModal() {
+      document.getElementById('helpModal').classList.add('hidden');
     }
 
     function switchTab(tabKey) {
@@ -997,52 +1084,6 @@
       } catch (err) {
         showToast('コピーに対応していません', 'warning');
       }
-    }
-
-    function loadSampleData() {
-      const today = new Date();
-      const nextWeek = new Date(today);
-      nextWeek.setDate(today.getDate() + 7);
-      const nextWeekStr = nextWeek.toISOString().slice(0, 10);
-
-      appData = {
-        startLocation: '越谷市谷中町1-122-1ワコーレ越谷',
-        spots: [
-          {
-            id: 'sample_1',
-            name: '越谷パートナーズ税理士法人 (埼玉県越谷市赤山町1-1)',
-            phone: '048-960-0001',
-            url: 'https://example.com',
-            category: '新規開拓商談',
-            rank: 'S',
-            duration: 45,
-            arrivalTime: '10:00',
-            departureTime: '10:45',
-            status: 'completed',
-            memo: '所長税理士様と面談完了。次回見積提示。',
-            nextActionDate: nextWeekStr,
-            nextActionMemo: '修正見積書をメール送付後にフォローTEL'
-          },
-          {
-            id: 'sample_2',
-            name: '武蔵野会計事務所 (埼玉県越谷市南越谷2-1)',
-            phone: '048-980-0002',
-            url: 'https://example.com',
-            category: '新規開拓商談',
-            rank: 'A',
-            duration: 30,
-            arrivalTime: '11:15',
-            departureTime: '11:45',
-            status: 'completed',
-            memo: '副所長様と面談。パンフレット受取完了。',
-            nextActionDate: nextWeekStr,
-            nextActionMemo: '資料送付およびフォローTEL'
-          }
-        ]
-      };
-      saveStateToStorage();
-      renderAllViews();
-      showToast('サンプルデータを読み込みました');
     }
 
     async function handleAiSearch() {
