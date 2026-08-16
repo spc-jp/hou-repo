@@ -90,12 +90,12 @@
             <span id="badge-followup-count" class="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
           </button>
 
-          <!-- CSV Import -->
+          <!-- CSV Import (Optimized accept for iOS Files & Google Drive) -->
           <button onclick="triggerCsvImport()" class="text-[11px] sm:text-xs px-2 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1" title="CSV取込">
             <i data-lucide="upload" class="w-3.5 h-3.5 text-slate-500"></i>
             <span class="hidden sm:inline">取込</span>
           </button>
-          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCsvFileSelect(event)">
+          <input type="file" id="csvFileInput" accept=".csv, text/csv, text/plain, application/csv, text/comma-separated-values, .txt" class="hidden" onchange="handleCsvFileSelect(event)">
 
           <!-- CSV Export -->
           <button onclick="exportToCsv()" class="text-[11px] sm:text-xs px-2 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1" title="CSV出力">
@@ -701,7 +701,7 @@
       showToast(`${count}件のデータをCSVから取り込みました`);
     }
 
-    function exportToCsv() {
+    async function exportToCsv() {
       if (appData.spots.length === 0) {
         showToast('出力するデータがありません', 'warning');
         return;
@@ -728,11 +728,34 @@
       });
 
       const csvString = '\uFEFF' + csvRows.join('\r\n');
+      const fileName = `訪問実績リスト_${new Date().toISOString().slice(0,10)}.csv`;
       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+
+      // iOS Web Share API support: Open iOS native Share Sheet for Google Drive & Files app
+      const file = new File([blob], fileName, { type: 'text/csv' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: '訪問実績リストCSV',
+            text: '訪問実績リストのデータです。'
+          });
+          showToast('共有・保存メニューを開きました');
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Share error:', err);
+          } else {
+            return; // Cancelled by user
+          }
+        }
+      }
+
+      // Standard desktop download fallback
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `訪問実績リスト_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1225,3 +1248,11 @@
   </script>
 </body>
 </html>
+```
+
+### 操作の確認手順
+
+1. **更新後のお試し方法（CSV出力）**:
+   iPhoneで「CSV出力」ボタンをタップすると、画面下にiPhoneの **共有画面（共有シート）** が開きます。その一覧から **「Googleドライブ」** または **「ファイルに保存」** を押せば、直接Googleドライブへ送信できます。
+2. **取込時のお試し方法（CSV取込）**:
+   「CSV取込」を押すとiPhoneのファイル選択画面が開くので、左上のメニューから **「Googleドライブ」** を指定してファイルを選択できます。
