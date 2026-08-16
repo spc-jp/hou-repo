@@ -5,15 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ホウレポ (HouRepo) - 訪問計画 ＆ 日報作成アシスタント</title>
 
-  <!-- Favicon & Apple Touch Icon (SVG Data URI) -->
+  <!-- Favicon & Apple Touch Icon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%232563eb'/><path d='M32 14c-7.7 0-14 6.3-14 14 0 10.5 14 22 14 22s14-11.5 14-22c0-7.7-6.3-14-14-14zm0 19a5 5 0 1 1 0-10 5 5 0 0 1 0 10z' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%232563eb'/><path d='M32 14c-7.7 0-14 6.3-14 14 0 10.5 14 22 14 22s14-11.5 14-22c0-7.7-6.3-14-14-14zm0 19a5 5 0 1 1 0-10 5 5 0 0 1 0 10z' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Google Fonts Inter & Noto Sans JP -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   
   <script>
@@ -52,9 +51,6 @@
       background: #cbd5e1;
       border-radius: 3px;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
   </style>
 </head>
 <body class="h-full text-slate-800 antialiased flex flex-col font-sans">
@@ -62,7 +58,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- Top Header -->
+  <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 glass-effect">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -73,12 +69,11 @@
           <h1 class="font-bold text-lg text-slate-900 leading-tight flex items-center gap-2">
             ホウレポ <span class="text-xs font-medium text-brand-600 bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded">HouRepo</span>
           </h1>
-          <p class="text-xs text-slate-500 hidden sm:block">ルート最適化・打刻・見込み管理・次回追客アシスタント</p>
+          <p class="text-xs text-slate-500 hidden sm:block">ルート最適化・打刻・ワンタップ電話・追客アシスタント</p>
         </div>
       </div>
       
       <div class="flex items-center space-x-2">
-        <!-- Alert Badge for Follow-ups -->
         <button onclick="showFollowupModal()" class="relative text-xs px-2.5 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition font-medium flex items-center gap-1.5">
           <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-600"></i>
           <span class="hidden sm:inline">追客アラート</span>
@@ -133,14 +128,14 @@
       
       <!-- Starting Location Card -->
       <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
             <i data-lucide="flag" class="w-4 h-4 text-emerald-500"></i>
             出発拠点・起点設定
           </label>
         </div>
         <div class="flex gap-2">
-          <input type="text" id="startLocationInput" placeholder="例: 越谷駅（または社名・住所）" value="越谷駅" 
+          <input type="text" id="startLocationInput" placeholder="例: 越谷市谷中町1-122-1ワコーレ越谷" value="越谷市谷中町1-122-1ワコーレ越谷" 
                  class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"
                  onchange="updateStartLocation(this.value)">
         </div>
@@ -158,7 +153,7 @@
           <span class="text-[10px] bg-indigo-500/40 border border-indigo-300/30 px-2 py-0.5 rounded-full font-medium text-indigo-100">上位5件を一括取得</span>
         </div>
         <p class="text-xs text-indigo-200 leading-relaxed">
-          地域と業種（例：「越谷市 税理士事務所」「草加市 工務店」など）を入力すると、最新のWeb検索から自動で上位5件をピックアップして訪問計画にセットします。
+          地域と業種（例：<b>越谷市 税理士事務所</b>）を入力すると、Google検索から上位5件（名前・住所・電話番号・URL）を一括抽出してリストに追加します。
         </p>
         <div class="flex flex-col sm:flex-row gap-2 pt-1">
           <input type="text" id="aiSearchInput" value="越谷市 税理士事務所" placeholder="例: 越谷市 税理士事務所" 
@@ -183,7 +178,20 @@
               <input type="text" id="inputSpotName" required placeholder="例: 株式会社サンプル / 埼玉県越谷市..." 
                      class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
             </div>
-            <div class="md:col-span-2">
+            <div class="md:col-span-3">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">電話番号</label>
+              <input type="tel" id="inputSpotPhone" placeholder="例: 048-900-0000" 
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            </div>
+            <div class="md:col-span-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">公式Webサイト URL</label>
+              <input type="url" id="inputSpotUrl" placeholder="例: https://example.com" 
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div class="md:col-span-3">
               <label class="block text-xs font-semibold text-slate-600 mb-1">見込みランク</label>
               <select id="inputRank" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 <option value="S">S (高見込み/即決)</option>
@@ -193,7 +201,7 @@
                 <option value="NG">NG (対象外)</option>
               </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="md:col-span-3">
               <label class="block text-xs font-semibold text-slate-600 mb-1">予定滞在時間</label>
               <select id="inputDuration" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 <option value="15">15分</option>
@@ -204,7 +212,7 @@
                 <option value="120">120分</option>
               </select>
             </div>
-            <div class="md:col-span-3">
+            <div class="md:col-span-6">
               <label class="block text-xs font-semibold text-slate-600 mb-1">目的 / 種別</label>
               <select id="inputCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 <option value="新規開拓商談">新規開拓商談</option>
@@ -244,7 +252,7 @@
               <i data-lucide="list" class="w-5 h-5 text-brand-600"></i>
               本日の訪問リスト
             </h2>
-            <p class="text-xs text-slate-500 mt-0.5">並び替え矢印で巡回順を最適化できます</p>
+            <p class="text-xs text-slate-500 mt-0.5">ワンタップで電話発信・WEB閲覧・マップ案内が可能です</p>
           </div>
           
           <button onclick="openGoogleMapsRoute()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20">
@@ -266,8 +274,8 @@
         <i data-lucide="info" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
         <div class="text-xs text-amber-900 leading-relaxed">
           <p class="font-bold mb-0.5">現場での操作手順</p>
-          到着時に「到着打刻」、商談完了時に「完了打刻」を記録してください。<br>
-          商談メモと一緒に**「見込みランク」**や**「次回追客予定日」**を更新しておくと、営業管理や日報作成が格段にスムーズになります。
+          到着時に「到着打刻」、完了時に「完了打刻」を記録します。<br>
+          緑の電話ボタンで直前アポ確認ができます。商談後にランクや次回追客日を更新してください。
         </div>
       </div>
 
@@ -285,7 +293,7 @@
               <i data-lucide="file-check" class="w-5 h-5 text-brand-600"></i>
               自動生成日報プレビュー
             </h2>
-            <p class="text-xs text-slate-500">本日の訪問実績・見込みランク・次回追客リストを自動集計</p>
+            <p class="text-xs text-slate-500">本日の訪問実績・見込みランク・電話連絡先・追客リストを集計</p>
           </div>
           <div class="flex items-center gap-2">
             <select id="reportFormat" onchange="generateReportText()" class="bg-slate-100 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
@@ -341,10 +349,10 @@
     </div>
   </div>
 
-  <!-- JavaScript Logic -->
+  <!-- JavaScript Application Logic -->
   <script>
     let appData = {
-      startLocation: '越谷駅',
+      startLocation: '越谷市谷中町1-122-1ワコーレ越谷',
       spots: []
     };
 
@@ -380,7 +388,7 @@
       if (saved) {
         try {
           appData = JSON.parse(saved);
-          document.getElementById('startLocationInput').value = appData.startLocation || '越谷駅';
+          document.getElementById('startLocationInput').value = appData.startLocation || '越谷市谷中町1-122-1ワコーレ越谷';
         } catch(e) {
           console.error("Failed to parse storage", e);
         }
@@ -388,7 +396,7 @@
     }
 
     function updateStartLocation(val) {
-      appData.startLocation = val.trim() || '出発地未設定';
+      appData.startLocation = val.trim() || '越谷市谷中町1-122-1ワコーレ越谷';
       saveStateToStorage();
       showToast('出発地点を更新しました');
     }
@@ -427,6 +435,8 @@
     function handleAddSpot(e) {
       e.preventDefault();
       const nameInput = document.getElementById('inputSpotName');
+      const phoneInput = document.getElementById('inputSpotPhone');
+      const urlInput = document.getElementById('inputSpotUrl');
       const rankInput = document.getElementById('inputRank');
       const durationInput = document.getElementById('inputDuration');
       const categoryInput = document.getElementById('inputCategory');
@@ -439,6 +449,8 @@
       const newSpot = {
         id: 'spot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         name: name,
+        phone: phoneInput ? phoneInput.value.trim() : '',
+        url: urlInput ? urlInput.value.trim() : '',
         rank: rankInput.value || 'B',
         duration: parseInt(durationInput.value, 10) || 30,
         category: categoryInput.value,
@@ -455,6 +467,8 @@
       renderAllViews();
 
       nameInput.value = '';
+      if(phoneInput) phoneInput.value = '';
+      if(urlInput) urlInput.value = '';
       nextMemoInput.value = '';
       showToast('訪問計画に追加しました');
     }
@@ -484,7 +498,7 @@
         return;
       }
 
-      const origin = encodeURIComponent(appData.startLocation || '現在地');
+      const origin = encodeURIComponent(appData.startLocation || '越谷市谷中町1-122-1ワコーレ越谷');
       const destination = encodeURIComponent(appData.spots[appData.spots.length - 1].name);
 
       let mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
@@ -577,10 +591,12 @@
             duration: parseInt(cols[3], 10) || 30,
             arrivalTime: cols[4] || null,
             departureTime: cols[5] || null,
-            status: cols[5] ? 'completed' : (cols[4] ? 'in_progress' : 'pending'),
             memo: cols[6] || '',
             nextActionDate: cols[7] || '',
-            nextActionMemo: cols[8] || ''
+            nextActionMemo: cols[8] || '',
+            phone: cols[9] || '',
+            url: cols[10] || '',
+            status: cols[5] ? 'completed' : (cols[4] ? 'in_progress' : 'pending')
           });
           count++;
         }
@@ -597,7 +613,7 @@
         return;
       }
 
-      const headers = ['訪問先名', 'カテゴリ', '見込みランク', '予定滞在分', '到着時間', '完了時間', 'メモ', '次回追客日', '次回アクション'];
+      const headers = ['訪問先名', 'カテゴリ', '見込みランク', '予定滞在分', '到着時間', '完了時間', 'メモ', '次回追客日', '次回アクション', '電話番号', 'URL'];
       let csvRows = [headers.join(',')];
 
       appData.spots.forEach(spot => {
@@ -610,7 +626,9 @@
           `"${spot.departureTime || ''}"`,
           `"${(spot.memo || '').replace(/"/g, '""')}"`,
           `"${spot.nextActionDate || ''}"`,
-          `"${(spot.nextActionMemo || '').replace(/"/g, '""')}"`
+          `"${(spot.nextActionMemo || '').replace(/"/g, '""')}"`,
+          `"${spot.phone || ''}"`,
+          `"${spot.url || ''}"`
         ];
         csvRows.push(row.join(','));
       });
@@ -677,6 +695,7 @@
                 <span>予定日: ${s.nextActionDate}</span>
                 <span>•</span>
                 <span>ランク ${s.rank || 'B'}</span>
+                ${s.phone ? `<span>• TEL: ${escapeHtml(s.phone)}</span>` : ''}
               </div>
               <p class="text-slate-700 bg-white p-2 rounded border border-slate-100 mt-1">${escapeHtml(s.nextActionMemo || 'アクション内容なし')}</p>
             </div>
@@ -727,6 +746,22 @@
                   ${getRankBadgeHtml(spot.rank)}
                   <span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium">${spot.category}</span>
                 </div>
+                
+                <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                  ${spot.phone ? `
+                    <a href="tel:${escapeHtml(spot.phone)}" class="text-emerald-600 font-medium hover:underline flex items-center gap-1">
+                      <i data-lucide="phone" class="w-3 h-3"></i>
+                      ${escapeHtml(spot.phone)}
+                    </a>
+                  ` : ''}
+                  ${spot.url ? `
+                    <a href="${escapeHtml(spot.url)}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:underline flex items-center gap-1 truncate max-w-[180px]">
+                      <i data-lucide="globe" class="w-3 h-3"></i>
+                      公式サイト
+                    </a>
+                  ` : ''}
+                </div>
+
                 ${spot.nextActionDate ? `
                   <div class="text-[11px] text-amber-700 flex items-center gap-1">
                     <i data-lucide="calendar" class="w-3 h-3"></i>
@@ -737,6 +772,11 @@
             </div>
 
             <div class="flex items-center gap-2 ml-2">
+              ${spot.phone ? `
+                <a href="tel:${escapeHtml(spot.phone)}" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="発信">
+                  <i data-lucide="phone-call" class="w-4 h-4"></i>
+                </a>
+              ` : ''}
               <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-white rounded-lg transition" title="場所を確認">
                 <i data-lucide="map-pin" class="w-4 h-4"></i>
               </button>
@@ -786,7 +826,19 @@
                 ${statusBadge}
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100">
+                ${spot.phone ? `
+                  <a href="tel:${escapeHtml(spot.phone)}" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="phone-call" class="w-3.5 h-3.5"></i>
+                    電話をかける
+                  </a>
+                ` : `
+                  <button disabled class="bg-slate-100 text-slate-400 font-medium text-xs py-2.5 px-3 rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5">
+                    <i data-lucide="phone-off" class="w-3.5 h-3.5"></i>
+                    TELなし
+                  </button>
+                `}
+
                 <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
                   <i data-lucide="navigation" class="w-3.5 h-3.5 text-brand-600"></i>
                   ナビ起動
@@ -876,6 +928,7 @@
         report += `【訪問明細】\n`;
         appData.spots.forEach((spot, i) => {
           report += `${i + 1}. ${spot.name} [ランク: ${spot.rank || 'B'}] (${spot.category})\n`;
+          if (spot.phone) report += `   TEL: ${spot.phone}\n`;
           report += `   時間: ${spot.arrivalTime || '--:--'} 〜 ${spot.departureTime || '--:--'}\n`;
           report += `   メモ: ${spot.memo || '特記事項なし'}\n`;
           if (spot.nextActionDate) {
@@ -904,6 +957,7 @@
 
         appData.spots.forEach((spot, i) => {
           report += `#### ${i + 1}. ${spot.name} (ランク ${spot.rank || 'B'} / ${spot.category})\n`;
+          if (spot.phone) report += `- **TEL:** ${spot.phone}\n`;
           report += `- **時間:** ${spot.arrivalTime || '--:--'} - ${spot.departureTime || '--:--'}\n`;
           report += `- **対応メモ:** ${spot.memo || 'なし'}\n`;
           if (spot.nextActionDate) {
@@ -952,11 +1006,13 @@
       const nextWeekStr = nextWeek.toISOString().slice(0, 10);
 
       appData = {
-        startLocation: '越谷駅 東口',
+        startLocation: '越谷市谷中町1-122-1ワコーレ越谷',
         spots: [
           {
             id: 'sample_1',
             name: '越谷パートナーズ税理士法人 (埼玉県越谷市赤山町1-1)',
+            phone: '048-960-0001',
+            url: 'https://example.com',
             category: '新規開拓商談',
             rank: 'S',
             duration: 45,
@@ -970,6 +1026,8 @@
           {
             id: 'sample_2',
             name: '武蔵野会計事務所 (埼玉県越谷市南越谷2-1)',
+            phone: '048-980-0002',
+            url: 'https://example.com',
             category: '新規開拓商談',
             rank: 'A',
             duration: 30,
@@ -1012,7 +1070,7 @@
 
         if (result.error) {
           const errMsg = typeof result.error === 'string' ? result.error : (result.error.message || '通信エラー');
-          showToast(`通信エラー: ${errMsg}`, 'warning');
+          showToast(`エラー: ${errMsg}`, 'warning');
           return;
         }
 
@@ -1043,6 +1101,8 @@
               appData.spots.push({
                 id: 'spot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                 name: fullName,
+                phone: item.phone || '',
+                url: item.url || '',
                 rank: 'B',
                 duration: 30,
                 category: item.category || '新規開拓',
@@ -1060,12 +1120,12 @@
           if (addedCount > 0) {
             saveStateToStorage();
             renderAllViews();
-            showToast(`「${keyword}」から上位${addedCount}件を訪問計画に追加しました！`);
+            showToast(`「${keyword}」から上位${addedCount}件を自動追加しました！`);
           } else {
             showToast('事業所の抽出に失敗しました', 'warning');
           }
         } else {
-          showToast('検索結果の解析に失敗しました。「地域名 業種名」でお試しください。', 'warning');
+          showToast('検索結果の取得に失敗しました。「地域名 業種名」でお試しください。', 'warning');
         }
 
       } catch (err) {
