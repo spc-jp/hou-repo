@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ja" class="h-full bg-slate-50">
+<html lang="ja" class="h-full bg-slate-50 overflow-x-hidden">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ホウレポ (HouRepo) - 訪問計画 ＆ 日報作成アシスタント</title>
 
   <!-- Favicon & Apple Touch Icon -->
@@ -36,13 +36,19 @@
     }
   </script>
   <style>
+    /* Prevent horizontal scrolling globally */
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
     .glass-effect {
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(8px);
     }
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
       background: #f1f5f9;
@@ -53,113 +59,121 @@
     }
   </style>
 </head>
-<body class="h-full text-slate-800 antialiased flex flex-col font-sans">
+<body class="h-full text-slate-800 antialiased flex flex-col font-sans w-full overflow-x-hidden">
 
   <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <div id="toast-container" class="fixed top-3 right-3 left-3 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- Header -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 glass-effect">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="p-2 bg-brand-600 text-white rounded-xl shadow-md shadow-brand-500/20">
-          <i data-lucide="map-pin" class="w-6 h-6"></i>
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 glass-effect w-full">
+    <div class="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col gap-2">
+      <!-- Top Row: Logo & Main Actions -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center space-x-2 min-w-0">
+          <div class="p-1.5 sm:p-2 bg-brand-600 text-white rounded-xl shadow-md shadow-brand-500/20 flex-shrink-0">
+            <i data-lucide="map-pin" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <h1 class="font-bold text-base sm:text-lg text-slate-900 leading-tight flex items-center gap-1.5">
+              ホウレポ <span class="text-[10px] sm:text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-200 px-1.5 py-0.2 rounded">HouRepo</span>
+            </h1>
+            <p class="text-[11px] text-slate-500 hidden md:block">ルート最適化・打刻・ワンタップ電話・追客アシスタント</p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-bold text-lg text-slate-900 leading-tight flex items-center gap-2">
-            ホウレポ <span class="text-xs font-medium text-brand-600 bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded">HouRepo</span>
-          </h1>
-          <p class="text-xs text-slate-500 hidden sm:block">ルート最適化・打刻・ワンタップ電話・追客アシスタント</p>
+
+        <!-- Action Buttons Bar -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <!-- Follow-up Alert -->
+          <button onclick="showFollowupModal()" class="text-[11px] sm:text-xs px-2 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition font-medium flex items-center gap-1">
+            <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-600"></i>
+            <span class="hidden xs:inline">追客</span>
+            <span id="badge-followup-count" class="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+
+          <!-- CSV Import -->
+          <button onclick="triggerCsvImport()" class="text-[11px] sm:text-xs px-2 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1" title="CSV取込">
+            <i data-lucide="upload" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span class="hidden sm:inline">取込</span>
+          </button>
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCsvFileSelect(event)">
+
+          <!-- CSV Export -->
+          <button onclick="exportToCsv()" class="text-[11px] sm:text-xs px-2 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1" title="CSV出力">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span class="hidden sm:inline">出力</span>
+          </button>
+
+          <!-- Help Guide Button -->
+          <button onclick="showHelpModal()" class="text-[11px] sm:text-xs px-2 py-1.5 text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 rounded-lg transition font-semibold flex items-center gap-1 shadow-sm">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-brand-600"></i>
+            <span>使い方</span>
+          </button>
+
+          <!-- Clear Data -->
+          <button onclick="clearAllData()" class="text-[11px] sm:text-xs p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition font-medium flex items-center justify-center" title="全データクリア">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
         </div>
-      </div>
-      
-      <div class="flex items-center space-x-2">
-        <button onclick="showFollowupModal()" class="relative text-xs px-2.5 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition font-medium flex items-center gap-1.5">
-          <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-600"></i>
-          <span class="hidden sm:inline">追客アラート</span>
-          <span id="badge-followup-count" class="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
-        </button>
-
-        <button onclick="triggerCsvImport()" class="text-xs px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1">
-          <i data-lucide="upload" class="w-3.5 h-3.5 text-slate-500"></i>
-          <span class="hidden sm:inline">CSV取込</span>
-        </button>
-        <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCsvFileSelect(event)">
-
-        <button onclick="exportToCsv()" class="text-xs px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
-          <span class="hidden sm:inline">CSV出力</span>
-        </button>
-
-        <!-- 使い方ボタン (サンプルボタンから変更) -->
-        <button onclick="showHelpModal()" class="text-xs px-3 py-1.5 text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 rounded-lg transition font-medium flex items-center gap-1 shadow-sm">
-          <i data-lucide="help-circle" class="w-3.5 h-3.5 text-brand-600"></i>
-          <span class="hidden sm:inline">使い方</span>
-        </button>
-
-        <button onclick="clearAllData()" class="text-xs px-2 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition font-medium flex items-center gap-1" title="全データクリア">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-        </button>
       </div>
     </div>
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
+  <main class="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 sm:gap-6">
 
-    <!-- Navigation Tabs -->
-    <div class="bg-slate-200/80 p-1 rounded-xl flex gap-1 text-sm font-medium">
-      <button id="tab-btn-plan" onclick="switchTab('plan')" class="tab-btn flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition bg-white shadow-sm text-brand-600 font-semibold">
-        <i data-lucide="calendar" class="w-4 h-4"></i>
-        <span>1. 訪問計画</span>
-        <span id="badge-plan-count" class="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full ml-1">0</span>
+    <!-- Navigation Tabs (Mobile Responsive Grid) -->
+    <div class="bg-slate-200/80 p-1 rounded-xl grid grid-cols-3 gap-1 text-xs sm:text-sm font-medium w-full">
+      <button id="tab-btn-plan" onclick="switchTab('plan')" class="tab-btn py-2 sm:py-2.5 px-1 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 transition bg-white shadow-sm text-brand-600 font-bold min-w-0">
+        <i data-lucide="calendar" class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"></i>
+        <span class="truncate">1. <span class="hidden sm:inline">訪問</span>計画</span>
+        <span id="badge-plan-count" class="bg-brand-100 text-brand-700 text-[10px] sm:text-xs px-1.5 py-0.2 rounded-full">0</span>
       </button>
-      <button id="tab-btn-execute" onclick="switchTab('execute')" class="tab-btn flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition text-slate-600 hover:text-slate-900">
-        <i data-lucide="navigation" class="w-4 h-4"></i>
-        <span>2. 現場打刻・商談</span>
+      <button id="tab-btn-execute" onclick="switchTab('execute')" class="tab-btn py-2 sm:py-2.5 px-1 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 transition text-slate-600 hover:text-slate-900 min-w-0">
+        <i data-lucide="navigation" class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"></i>
+        <span class="truncate">2. 打刻<span class="hidden sm:inline">・商談</span></span>
       </button>
-      <button id="tab-btn-report" onclick="switchTab('report')" class="tab-btn flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition text-slate-600 hover:text-slate-900">
-        <i data-lucide="file-text" class="w-4 h-4"></i>
-        <span>3. 日報作成</span>
+      <button id="tab-btn-report" onclick="switchTab('report')" class="tab-btn py-2 sm:py-2.5 px-1 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 transition text-slate-600 hover:text-slate-900 min-w-0">
+        <i data-lucide="file-text" class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"></i>
+        <span class="truncate">3. 日報<span class="hidden sm:inline">作成</span></span>
       </button>
     </div>
 
     <!-- TAB 1: 訪問計画 (Plan) -->
-    <div id="tab-content-plan" class="tab-content flex flex-col gap-6">
+    <div id="tab-content-plan" class="tab-content flex flex-col gap-4 sm:gap-6 w-full">
       
       <!-- Starting Location Card -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="flag" class="w-4 h-4 text-emerald-500"></i>
+      <div class="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm w-full">
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="flag" class="w-3.5 h-3.5 text-emerald-500"></i>
             出発拠点・起点設定
           </label>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 w-full">
           <input type="text" id="startLocationInput" placeholder="例: 越谷市谷中町1-122-1ワコーレ越谷" value="越谷市谷中町1-122-1ワコーレ越谷" 
-                 class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"
+                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"
                  onchange="updateStartLocation(this.value)">
         </div>
       </div>
 
       <!-- AI Search & Auto List Generator Card -->
-      <div class="bg-gradient-to-br from-indigo-900 via-brand-900 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-indigo-700/50 space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="p-1.5 bg-indigo-500/30 rounded-lg backdrop-blur-sm border border-indigo-400/30">
+      <div class="bg-gradient-to-br from-indigo-900 via-brand-900 to-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-lg border border-indigo-700/50 space-y-3 w-full">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="p-1.5 bg-indigo-500/30 rounded-lg backdrop-blur-sm border border-indigo-400/30 flex-shrink-0">
               <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
             </div>
-            <h2 class="font-bold text-sm sm:text-base text-white">AIエリアターゲット自動抽出 (例: 越谷市 税理士事務所)</h2>
+            <h2 class="font-bold text-xs sm:text-base text-white truncate">AIターゲット自動抽出</h2>
           </div>
-          <span class="text-[10px] bg-indigo-500/40 border border-indigo-300/30 px-2 py-0.5 rounded-full font-medium text-indigo-100">上位5件を一括取得</span>
+          <span class="text-[9px] sm:text-[10px] bg-indigo-500/40 border border-indigo-300/30 px-2 py-0.5 rounded-full font-medium text-indigo-100 flex-shrink-0">上位5件一括取得</span>
         </div>
-        <p class="text-xs text-indigo-200 leading-relaxed">
-          地域と業種（例：<b>越谷市 税理士事務所</b>）を入力すると、Google検索から上位5件（名前・住所・電話番号・URL）を一括抽出してリストに追加します。
+        <p class="text-[11px] sm:text-xs text-indigo-200 leading-relaxed">
+          地域と業種（例：<b>越谷市 税理士事務所</b>）を入力すると、Google検索から上位5件（名前・住所・TEL・URL）を一括自動抽出します。
         </p>
-        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+        <div class="flex flex-col sm:flex-row gap-2 pt-1 w-full">
           <input type="text" id="aiSearchInput" value="越谷市 税理士事務所" placeholder="例: 越谷市 税理士事務所" 
-                 class="flex-1 bg-white/10 border border-white/20 text-white placeholder-indigo-300/60 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
-          <button id="aiSearchBtn" onclick="handleAiSearch()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md">
+                 class="w-full sm:flex-1 bg-white/10 border border-white/20 text-white placeholder-indigo-300/60 rounded-xl px-3.5 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+          <button id="aiSearchBtn" onclick="handleAiSearch()" class="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md flex-shrink-0">
             <i data-lucide="search" class="w-4 h-4"></i>
             <span>上位5件を取得して追加</span>
           </button>
@@ -167,34 +181,34 @@
       </div>
 
       <!-- Add New Spot Form -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h2 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i>
+      <div class="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm w-full">
+        <h2 class="text-sm sm:text-base font-bold text-slate-900 mb-3 flex items-center gap-1.5">
+          <i data-lucide="plus-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-brand-600"></i>
           新しい訪問先を手動追加
         </h2>
-        <form onsubmit="handleAddSpot(event)" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+        <form onsubmit="handleAddSpot(event)" class="space-y-3 w-full">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
             <div class="md:col-span-5">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">訪問先名・住所 <span class="text-rose-500">*</span></label>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">訪問先名・住所 <span class="text-rose-500">*</span></label>
               <input type="text" id="inputSpotName" required placeholder="例: 株式会社サンプル / 埼玉県越谷市..." 
-                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
             </div>
             <div class="md:col-span-3">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">電話番号</label>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">電話番号</label>
               <input type="tel" id="inputSpotPhone" placeholder="例: 048-900-0000" 
-                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
             </div>
             <div class="md:col-span-4">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">公式Webサイト URL</label>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">公式Webサイト URL</label>
               <input type="url" id="inputSpotUrl" placeholder="例: https://example.com" 
-                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="grid grid-cols-2 md:grid-cols-12 gap-2.5">
             <div class="md:col-span-3">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">見込みランク</label>
-              <select id="inputRank" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">見込みランク</label>
+              <select id="inputRank" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs sm:text-sm focus:outline-none">
                 <option value="S">S (高見込み/即決)</option>
                 <option value="A">A (有望案件)</option>
                 <option value="B" selected>B (通常案件)</option>
@@ -203,8 +217,8 @@
               </select>
             </div>
             <div class="md:col-span-3">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">予定滞在時間</label>
-              <select id="inputDuration" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">予定滞在時間</label>
+              <select id="inputDuration" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs sm:text-sm focus:outline-none">
                 <option value="15">15分</option>
                 <option value="30" selected>30分</option>
                 <option value="45">45分</option>
@@ -213,9 +227,9 @@
                 <option value="120">120分</option>
               </select>
             </div>
-            <div class="md:col-span-6">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">目的 / 種別</label>
-              <select id="inputCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            <div class="col-span-2 md:col-span-6">
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">目的 / 種別</label>
+              <select id="inputCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs sm:text-sm focus:outline-none">
                 <option value="新規開拓商談">新規開拓商談</option>
                 <option value="既存フォロー">既存フォロー</option>
                 <option value="定期面談">定期面談</option>
@@ -225,19 +239,19 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1 border-t border-slate-100">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 pt-1 border-t border-slate-100">
             <div class="md:col-span-4">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">次回追客予定日 (任意)</label>
-              <input type="date" id="inputNextActionDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">次回追客予定日 (任意)</label>
+              <input type="date" id="inputNextActionDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none">
             </div>
             <div class="md:col-span-8">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">次回アクション内容 (任意)</label>
-              <input type="text" id="inputNextActionMemo" placeholder="例: 見積提出の御礼電話 / 資料送付" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">次回アクション内容 (任意)</label>
+              <input type="text" id="inputNextActionMemo" placeholder="例: 見積提出の御礼電話 / 資料送付" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none">
             </div>
           </div>
 
           <div class="flex justify-end pt-1">
-            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-md shadow-brand-600/20">
+            <button type="submit" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs sm:text-sm px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-brand-600/20">
               <i data-lucide="plus" class="w-4 h-4"></i>
               訪問計画に追加
             </button>
@@ -246,58 +260,57 @@
       </div>
 
       <!-- Spots List Header & Multi Maps Button -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      <div class="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-3 w-full">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
           <div>
-            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="list" class="w-5 h-5 text-brand-600"></i>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="list" class="w-4 h-4 sm:w-5 sm:h-5 text-brand-600"></i>
               本日の訪問リスト
             </h2>
-            <p class="text-xs text-slate-500 mt-0.5">ワンタップで電話発信・WEB閲覧・マップ案内が可能です</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">ワンタップで電話発信・WEB閲覧・マップ案内が可能です</p>
           </div>
           
-          <button onclick="openGoogleMapsRoute()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20">
+          <button onclick="openGoogleMapsRoute()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20">
             <i data-lucide="map" class="w-4 h-4"></i>
             <span>Googleマップで全ルートを開く</span>
             <i data-lucide="external-link" class="w-3.5 h-3.5 opacity-70"></i>
           </button>
         </div>
 
-        <div id="planSpotList" class="space-y-3">
+        <div id="planSpotList" class="space-y-2.5 w-full">
           <!-- JS Rendered -->
         </div>
       </div>
     </div>
 
     <!-- TAB 2: 現場打刻 (Execute) -->
-    <div id="tab-content-execute" class="tab-content hidden flex flex-col gap-6">
-      <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3">
-        <i data-lucide="info" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+    <div id="tab-content-execute" class="tab-content hidden flex flex-col gap-4 sm:gap-6 w-full">
+      <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-start gap-2.5 w-full">
+        <i data-lucide="info" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
         <div class="text-xs text-amber-900 leading-relaxed">
           <p class="font-bold mb-0.5">現場での操作手順</p>
-          到着時に「到着打刻」、完了時に「完了打刻」を記録します。<br>
-          緑の電話ボタンで直前アポ確認ができます。商談後にランクや次回追客日を更新してください。
+          到着時に「到着打刻」、完了時に「完了打刻」をタップします。電話ボタンで直前アポ確認も可能です。
         </div>
       </div>
 
-      <div id="executeSpotList" class="space-y-4">
+      <div id="executeSpotList" class="space-y-3 sm:space-y-4 w-full">
         <!-- JS Rendered -->
       </div>
     </div>
 
     <!-- TAB 3: 日報作成 (Report) -->
-    <div id="tab-content-report" class="tab-content hidden flex flex-col gap-6">
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div id="tab-content-report" class="tab-content hidden flex flex-col gap-4 sm:gap-6 w-full">
+      <div class="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3 w-full">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
-            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="file-check" class="w-5 h-5 text-brand-600"></i>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="file-check" class="w-4 h-4 sm:w-5 sm:h-5 text-brand-600"></i>
               自動生成日報プレビュー
             </h2>
-            <p class="text-xs text-slate-500">本日の訪問実績・見込みランク・電話連絡先・追客リストを集計</p>
+            <p class="text-[11px] text-slate-500">訪問実績・見込みランク・電話連絡先・追客リストを一括集計</p>
           </div>
           <div class="flex items-center gap-2">
-            <select id="reportFormat" onchange="generateReportText()" class="bg-slate-100 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
+            <select id="reportFormat" onchange="generateReportText()" class="w-full sm:w-auto bg-slate-100 border border-slate-200 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
               <option value="standard">標準営業日報フォーマット</option>
               <option value="markdown">Markdownフォーマット</option>
               <option value="simple">シンプル（チャットツール用）</option>
@@ -305,19 +318,19 @@
           </div>
         </div>
 
-        <textarea id="reportTextArea" class="w-full h-80 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed resize-y" placeholder="日報データがありません"></textarea>
+        <textarea id="reportTextArea" class="w-full h-72 sm:h-80 bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 text-xs sm:text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed resize-y" placeholder="日報データがありません"></textarea>
 
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-1">
           <div class="text-xs text-slate-500">
             <span id="reportSummaryText">0件の訪問記録</span>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <button onclick="generateReportText()" class="flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2">
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            <button onclick="generateReportText()" class="flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs sm:text-sm px-3.5 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
               再生成
             </button>
-            <button onclick="copyReportToClipboard()" class="flex-1 sm:flex-none bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-brand-600/20">
-              <i data-lucide="copy" class="w-4 h-4"></i>
+            <button onclick="copyReportToClipboard()" class="flex-1 sm:flex-none bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-brand-600/20">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
               日報をコピー
             </button>
           </div>
@@ -327,69 +340,63 @@
 
   </main>
 
-  <!-- Usage Help Modal (使い方ガイドモーダル) -->
-  <div id="helpModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
-          <i data-lucide="help-circle" class="w-5 h-5 text-brand-600"></i>
+  <!-- Usage Help Modal -->
+  <div id="helpModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 space-y-3.5 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 flex-shrink-0">
+        <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-1.5">
+          <i data-lucide="help-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-brand-600"></i>
           ホウレポ アプリの使い方ガイド
         </h3>
-        <button onclick="hideHelpModal()" class="text-slate-400 hover:text-slate-600">
+        <button onclick="hideHelpModal()" class="text-slate-400 hover:text-slate-600 p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
       
-      <div class="overflow-y-auto space-y-4 pr-1 text-xs sm:text-sm text-slate-700 leading-relaxed flex-1">
+      <div class="overflow-y-auto space-y-3.5 pr-1 text-xs sm:text-sm text-slate-700 leading-relaxed flex-1">
         
         <!-- App Purpose -->
-        <div class="bg-brand-50/70 border border-brand-100 p-4 rounded-xl space-y-1">
-          <h4 class="font-bold text-brand-900 flex items-center gap-1.5 text-sm">
+        <div class="bg-brand-50/70 border border-brand-100 p-3 sm:p-4 rounded-xl space-y-1">
+          <h4 class="font-bold text-brand-900 flex items-center gap-1.5 text-xs sm:text-sm">
             <i data-lucide="target" class="w-4 h-4 text-brand-600"></i>
             アプリの目的
           </h4>
-          <p class="text-slate-700 text-xs leading-normal">
+          <p class="text-slate-700 text-[11px] sm:text-xs leading-normal">
             営業・訪問活動における<b>「訪問先選定」「移動ルート最適化」「現場での直前確認・打刻・メモ」「自動日報作成」「次回追客管理」</b>をスマホひとつで効率化し、日報作成の手間削減と営業成果（成約率）向上を同時に実現するアシスタントツールです。
           </p>
         </div>
 
         <!-- Flow Steps -->
-        <div class="space-y-3">
-          <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5 border-b border-slate-100 pb-1">
+        <div class="space-y-2.5">
+          <h4 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 border-b border-slate-100 pb-1">
             <i data-lucide="play-circle" class="w-4 h-4 text-emerald-600"></i>
             一日の使い方の流れ（5ステップ）
           </h4>
 
-          <ul class="space-y-2.5 text-xs">
-            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <ul class="space-y-2 text-[11px] sm:text-xs">
+            <li class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
               <span class="font-bold text-brand-700 block mb-0.5">① 出発地設定 ＆ AIターゲット自動抽出</span>
-              「出発拠点・起点設定」に自社や出発地を入力します。<br>
-              AI検索（例：<code>越谷市 税理士事務所</code>）を実行すると、Googleから上位5件の実在事業所（名前・住所・TEL・URL）を一括抽出して訪問リストに自動登録します。
+              自社や出発地を入力し、AI検索（例：<code>越谷市 税理士事務所</code>）を実行すると、Googleから上位5件の実在事業所（名前・住所・TEL・URL）を一括抽出して訪問リストに自動登録します。
             </li>
 
-            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <li class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
               <span class="font-bold text-brand-700 block mb-0.5">② 効率化ルートをGoogleマップで確認</span>
               「Googleマップで全ルートを開く」ボタンを押すと、すべての訪問先を一番効率的な順序で移動できるナビゲーションが開きます。
             </li>
 
-            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <li class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
               <span class="font-bold text-brand-700 block mb-0.5">③ 現場対応（直前TEL・ワンタップ打刻・商談メモ記録）</span>
-              「2. 現場打刻・商談」タブを開きます。<br>
-              ・直前確認: 緑の<b>電話ボタン</b>で直前にアポ確認。<br>
-              ・打刻: 到着時に<b>「到着打刻」</b>、完了時に<b>「完了打刻」</b>。<br>
-              ・メモ: 商談結果や感触（S/A/B/Cランク）、次回アクションを入力します。
+              「2. 打刻・商談」タブで、緑の<b>電話ボタン</b>からアポ確認を行い、到着時に<b>「到着打刻」</b>、完了時に<b>「完了打刻」</b>。商談結果や次回アクションを入力します。
             </li>
 
-            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <li class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
               <span class="font-bold text-brand-700 block mb-0.5">④ 営業日報の自動生成・コピー</span>
-              「3. 日報作成」タブを開くと、本日の訪問先、打刻時間、見込みランク、商談メモが綺麗にレイアウトされた日報テキストが自動完成します。「日報をコピー」で社内チャットやメールに即座に貼り付け可能です。
+              「3. 日報作成」タブを開くと日報テキストが自動作成され、「日報をコピー」で社内チャットやメールに貼り付け可能です。
             </li>
 
-            <li class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span class="font-bold text-brand-700 block mb-0.5">⑤ CSVでバックアップ保存 ＆ 繰り返し訪問（追客）</span>
-              ・<b>CSV出力</b>: 本日の実績や商談メモをCSVファイルとして保存できます。<br>
-              ・<b>CSV取込</b>: 保存したファイルを次回「CSV取込」すれば、見込み客データ（ランクや次回アプローチ日）を引き継いで繰り返し訪問・継続フォローを行えます。<br>
-              ・<b>追客アラート</b>: 設定した次回追客日になると、画面上のアラート（通知）が点灯してお知らせします。
+            <li class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+              <span class="font-bold text-brand-700 block mb-0.5">⑤ CSV保存 ＆ 繰り返し訪問（追客）</span>
+              実績を<b>CSV出力</b>で保存し、次回<b>CSV取込</b>で過去データを引き継いで繰り返し訪問・追客アプローチが行えます。
             </li>
           </ul>
         </div>
@@ -397,7 +404,7 @@
       </div>
 
       <div class="flex justify-end pt-2 border-t border-slate-100 flex-shrink-0">
-        <button onclick="hideHelpModal()" class="bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs px-5 py-2.5 rounded-xl transition">
+        <button onclick="hideHelpModal()" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-5 py-2 rounded-xl transition">
           閉じる
         </button>
       </div>
@@ -405,21 +412,21 @@
   </div>
 
   <!-- Follow-up Modal -->
-  <div id="followupModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
-          <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
+  <div id="followupModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-100 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-1.5">
+          <i data-lucide="bell" class="w-4 h-4 sm:w-5 sm:h-5 text-amber-500"></i>
           要追客アラート・アクション一覧
         </h3>
-        <button onclick="hideFollowupModal()" class="text-slate-400 hover:text-slate-600">
+        <button onclick="hideFollowupModal()" class="text-slate-400 hover:text-slate-600 p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
       <div id="followupModalList" class="max-h-80 overflow-y-auto space-y-2 text-xs">
         <!-- JS Rendered -->
       </div>
-      <div class="flex justify-end pt-2">
+      <div class="flex justify-end pt-1">
         <button onclick="hideFollowupModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">
           閉じる
         </button>
@@ -446,7 +453,7 @@
         'NG': 'bg-slate-200 text-slate-600 border-slate-300'
       };
       const colorClass = map[r] || map['B'];
-      return `<span class="border text-[10px] font-bold px-2 py-0.5 rounded-md ${colorClass}">ランク ${r}</span>`;
+      return `<span class="border text-[10px] font-bold px-1.5 py-0.2 rounded ${colorClass}">ランク ${r}</span>`;
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -500,7 +507,7 @@
     function switchTab(tabKey) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-white', 'shadow-sm', 'text-brand-600', 'font-semibold');
+        btn.classList.remove('bg-white', 'shadow-sm', 'text-brand-600', 'font-bold');
         btn.classList.add('text-slate-600');
       });
 
@@ -509,7 +516,7 @@
 
       if (activeContent && activeBtn) {
         activeContent.classList.remove('hidden');
-        activeBtn.classList.add('bg-white', 'shadow-sm', 'text-brand-600', 'font-semibold');
+        activeBtn.classList.add('bg-white', 'shadow-sm', 'text-brand-600', 'font-bold');
         activeBtn.classList.remove('text-slate-600');
       }
 
@@ -768,23 +775,23 @@
         modalList.innerHTML = targetSpots.map(s => {
           const isOverdue = s.nextActionDate < today;
           const isToday = s.nextActionDate === today;
-          let statusLabel = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">予定</span>`;
-          if (isOverdue) statusLabel = `<span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded">期日超過</span>`;
-          if (isToday) statusLabel = `<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">本日期日</span>`;
+          let statusLabel = `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded">予定</span>`;
+          if (isOverdue) statusLabel = `<span class="bg-rose-100 text-rose-700 font-bold px-1.5 py-0.2 rounded">期日超過</span>`;
+          if (isToday) statusLabel = `<span class="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded">本日期日</span>`;
 
           return `
-            <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-slate-800">${escapeHtml(s.name)}</span>
+            <div class="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div class="flex items-center justify-between gap-1">
+                <span class="font-bold text-slate-800 break-all">${escapeHtml(s.name)}</span>
                 ${statusLabel}
               </div>
-              <div class="flex items-center gap-2 text-slate-500">
+              <div class="flex items-center gap-1.5 text-slate-500 flex-wrap">
                 <span>予定日: ${s.nextActionDate}</span>
                 <span>•</span>
                 <span>ランク ${s.rank || 'B'}</span>
                 ${s.phone ? `<span>• TEL: ${escapeHtml(s.phone)}</span>` : ''}
               </div>
-              <p class="text-slate-700 bg-white p-2 rounded border border-slate-100 mt-1">${escapeHtml(s.nextActionMemo || 'アクション内容なし')}</p>
+              <p class="text-slate-700 bg-white p-2 rounded border border-slate-100 mt-1 break-all">${escapeHtml(s.nextActionMemo || 'アクション内容なし')}</p>
             </div>
           `;
         }).join('');
@@ -804,45 +811,45 @@
       const planContainer = document.getElementById('planSpotList');
       if (appData.spots.length === 0) {
         planContainer.innerHTML = `
-          <div class="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
-            <i data-lucide="map-pin-off" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
-            <p class="text-sm font-medium text-slate-500">まだ訪問先が設定されていません</p>
-            <p class="text-xs text-slate-400 mt-1">「AIエリアターゲット自動抽出」または手動で予定を追加してください</p>
+          <div class="text-center py-8 border-2 border-dashed border-slate-200 rounded-2xl p-4">
+            <i data-lucide="map-pin-off" class="w-8 h-8 text-slate-300 mx-auto mb-1.5"></i>
+            <p class="text-xs sm:text-sm font-medium text-slate-500">まだ訪問先が設定されていません</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">「AIエリアターゲット自動抽出」または手動で予定を追加してください</p>
           </div>
         `;
       } else {
         planContainer.innerHTML = appData.spots.map((spot, index) => `
-          <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-slate-300 transition group">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="flex flex-col gap-0.5">
-                <button onclick="moveSpot(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : 'class="hover:text-brand-600 text-slate-400"'}>
+          <div class="flex items-start justify-between p-3 sm:p-4 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-slate-300 transition group w-full gap-2">
+            <div class="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
+              <div class="flex flex-col gap-0.5 pt-0.5">
+                <button onclick="moveSpot(${index}, -1)" ${index === 0 ? 'disabled class="opacity-20 cursor-not-allowed"' : 'class="hover:text-brand-600 text-slate-400"'}>
                   <i data-lucide="chevron-up" class="w-4 h-4"></i>
                 </button>
-                <button onclick="moveSpot(${index}, 1)" ${index === appData.spots.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : 'class="hover:text-brand-600 text-slate-400"'}>
+                <button onclick="moveSpot(${index}, 1)" ${index === appData.spots.length - 1 ? 'disabled class="opacity-20 cursor-not-allowed"' : 'class="hover:text-brand-600 text-slate-400"'}>
                   <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 </button>
               </div>
               
-              <div class="w-7 h-7 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
+              <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                 ${index + 1}
               </div>
 
               <div class="min-w-0 flex-1 space-y-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-slate-900 text-sm truncate">${escapeHtml(spot.name)}</span>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-slate-900 text-xs sm:text-sm break-all">${escapeHtml(spot.name)}</span>
                   ${getRankBadgeHtml(spot.rank)}
-                  <span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium">${spot.category}</span>
+                  <span class="text-[9px] sm:text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-medium">${spot.category}</span>
                 </div>
                 
-                <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                <div class="flex items-center gap-2.5 text-[11px] text-slate-500 flex-wrap">
                   ${spot.phone ? `
-                    <a href="tel:${escapeHtml(spot.phone)}" class="text-emerald-600 font-medium hover:underline flex items-center gap-1">
+                    <a href="tel:${escapeHtml(spot.phone)}" class="text-emerald-600 font-medium hover:underline flex items-center gap-0.5">
                       <i data-lucide="phone" class="w-3 h-3"></i>
                       ${escapeHtml(spot.phone)}
                     </a>
                   ` : ''}
                   ${spot.url ? `
-                    <a href="${escapeHtml(spot.url)}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:underline flex items-center gap-1 truncate max-w-[180px]">
+                    <a href="${escapeHtml(spot.url)}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:underline flex items-center gap-0.5 truncate max-w-[140px] sm:max-w-[200px]">
                       <i data-lucide="globe" class="w-3 h-3"></i>
                       公式サイト
                     </a>
@@ -850,24 +857,24 @@
                 </div>
 
                 ${spot.nextActionDate ? `
-                  <div class="text-[11px] text-amber-700 flex items-center gap-1">
-                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                  <div class="text-[10px] sm:text-[11px] text-amber-700 flex items-center gap-1 flex-wrap">
+                    <i data-lucide="calendar" class="w-3 h-3 flex-shrink-0"></i>
                     <span>次回追客: ${spot.nextActionDate} (${escapeHtml(spot.nextActionMemo || '要連絡')})</span>
                   </div>
                 ` : ''}
               </div>
             </div>
 
-            <div class="flex items-center gap-2 ml-2">
+            <div class="flex items-center gap-1 flex-shrink-0">
               ${spot.phone ? `
-                <a href="tel:${escapeHtml(spot.phone)}" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="発信">
+                <a href="tel:${escapeHtml(spot.phone)}" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="電話発信">
                   <i data-lucide="phone-call" class="w-4 h-4"></i>
                 </a>
               ` : ''}
-              <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-white rounded-lg transition" title="場所を確認">
+              <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="p-1.5 text-slate-500 hover:text-brand-600 rounded-lg transition" title="マップ起動">
                 <i data-lucide="map-pin" class="w-4 h-4"></i>
               </button>
-              <button onclick="removeSpot('${spot.id}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="削除">
+              <button onclick="removeSpot('${spot.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="削除">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
@@ -878,32 +885,32 @@
       const executeContainer = document.getElementById('executeSpotList');
       if (appData.spots.length === 0) {
         executeContainer.innerHTML = `
-          <div class="text-center py-10 bg-white rounded-2xl border border-slate-200/80">
-            <p class="text-sm font-medium text-slate-500">訪問計画に拠点が見つかりません</p>
+          <div class="text-center py-8 bg-white rounded-2xl border border-slate-200/80 p-4">
+            <p class="text-xs sm:text-sm font-medium text-slate-500">訪問計画に拠点が見つかりません</p>
           </div>
         `;
       } else {
         executeContainer.innerHTML = appData.spots.map((spot, index) => {
-          let statusBadge = `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full font-semibold">未訪問</span>`;
+          let statusBadge = `<span class="bg-slate-100 text-slate-600 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-semibold">未訪問</span>`;
           if (spot.status === 'in_progress') {
-            statusBadge = `<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-semibold animate-pulse">対応中</span>`;
+            statusBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-semibold animate-pulse">対応中</span>`;
           } else if (spot.status === 'completed') {
-            statusBadge = `<span class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-semibold">完了</span>`;
+            statusBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-semibold">完了</span>`;
           }
 
           return `
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold text-sm flex items-center justify-center">
+            <div class="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3 w-full">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-900 text-white font-bold text-xs sm:text-sm flex items-center justify-center flex-shrink-0">
                     ${index + 1}
                   </div>
-                  <div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <h3 class="font-bold text-slate-900 text-base">${escapeHtml(spot.name)}</h3>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <h3 class="font-bold text-slate-900 text-xs sm:text-base break-all">${escapeHtml(spot.name)}</h3>
                       ${getRankBadgeHtml(spot.rank)}
                     </div>
-                    <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                    <div class="flex items-center gap-1.5 mt-0.5 text-[10px] sm:text-xs text-slate-500">
                       <span>${spot.category}</span>
                       <span>•</span>
                       <span>予定: ${spot.duration}分</span>
@@ -913,39 +920,40 @@
                 ${statusBadge}
               </div>
 
+              <!-- Action Buttons (2x2 Grid on Mobile) -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100">
                 ${spot.phone ? `
-                  <a href="tel:${escapeHtml(spot.phone)}" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                  <a href="tel:${escapeHtml(spot.phone)}" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs py-2 px-2.5 rounded-xl transition flex items-center justify-center gap-1">
                     <i data-lucide="phone-call" class="w-3.5 h-3.5"></i>
                     電話をかける
                   </a>
                 ` : `
-                  <button disabled class="bg-slate-100 text-slate-400 font-medium text-xs py-2.5 px-3 rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5">
+                  <button disabled class="bg-slate-100 text-slate-400 font-medium text-xs py-2 px-2.5 rounded-xl cursor-not-allowed flex items-center justify-center gap-1">
                     <i data-lucide="phone-off" class="w-3.5 h-3.5"></i>
                     TELなし
                   </button>
                 `}
 
-                <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs py-2 px-2.5 rounded-xl transition flex items-center justify-center gap-1">
                   <i data-lucide="navigation" class="w-3.5 h-3.5 text-brand-600"></i>
                   ナビ起動
                 </button>
 
-                <button onclick="stampArrival('${spot.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                <button onclick="stampArrival('${spot.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-xs py-2 px-2.5 rounded-xl transition flex items-center justify-center gap-1">
                   <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                   ${spot.arrivalTime ? `到着: ${spot.arrivalTime}` : '到着打刻'}
                 </button>
 
-                <button onclick="stampDeparture('${spot.id}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                <button onclick="stampDeparture('${spot.id}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs py-2 px-2.5 rounded-xl transition flex items-center justify-center gap-1">
                   <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
                   ${spot.departureTime ? `完了: ${spot.departureTime}` : '完了打刻'}
                 </button>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-slate-100">
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 pt-2 border-t border-slate-100">
                 <div class="md:col-span-3">
-                  <label class="block text-[10px] font-bold text-slate-500 mb-1">見込みランク更新</label>
-                  <select onchange="updateSpotField('${spot.id}', 'rank', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none">
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">見込みランク更新</label>
+                  <select onchange="updateSpotField('${spot.id}', 'rank', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none">
                     <option value="S" ${spot.rank === 'S' ? 'selected' : ''}>S (成約確実)</option>
                     <option value="A" ${spot.rank === 'A' ? 'selected' : ''}>A (見込み高)</option>
                     <option value="B" ${spot.rank === 'B' ? 'selected' : ''}>B (見込み中)</option>
@@ -955,29 +963,29 @@
                 </div>
 
                 <div class="md:col-span-9">
-                  <label class="block text-[10px] font-bold text-slate-500 mb-1">商談・訪問メモ</label>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">商談・訪問メモ</label>
                   <input type="text" 
                          placeholder="商談結果・要点メモを入力..." 
                          value="${escapeHtml(spot.memo || '')}"
                          onchange="updateSpotField('${spot.id}', 'memo', this.value)"
-                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
                 </div>
 
                 <div class="md:col-span-4">
-                  <label class="block text-[10px] font-bold text-slate-500 mb-1">次回追客予定日</label>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">次回追客予定日</label>
                   <input type="date" 
                          value="${spot.nextActionDate || ''}"
                          onchange="updateSpotField('${spot.id}', 'nextActionDate', this.value)"
-                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
                 </div>
 
                 <div class="md:col-span-8">
-                  <label class="block text-[10px] font-bold text-slate-500 mb-1">次回ネクストアクション内容</label>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">次回ネクストアクション内容</label>
                   <input type="text" 
                          placeholder="例: 再度訪問 / 見積もり送付後にTEL" 
                          value="${escapeHtml(spot.nextActionMemo || '')}"
                          onchange="updateSpotField('${spot.id}', 'nextActionMemo', this.value)"
-                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none">
                 </div>
               </div>
             </div>
@@ -1186,7 +1194,7 @@
       let bgColor = 'bg-slate-900 text-white';
       if (type === 'warning') bgColor = 'bg-amber-600 text-white';
 
-      toast.className = `${bgColor} text-xs font-medium px-4 py-3 rounded-xl shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 flex items-center gap-2 pointer-events-auto`;
+      toast.className = `${bgColor} text-xs font-medium px-3 py-2.5 rounded-xl shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 flex items-center gap-2 pointer-events-auto`;
       toast.innerHTML = `<span>${message}</span>`;
 
       container.appendChild(toast);
