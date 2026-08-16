@@ -13,7 +13,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Google Fonts Inter -->
+  <!-- Google Fonts Inter & Noto Sans JP -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   
   <script>
@@ -41,7 +41,6 @@
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(8px);
     }
-    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -101,6 +100,12 @@
           <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
           <span class="hidden sm:inline">サンプル</span>
         </button>
+
+        <button onclick="showApiKeyModal()" class="text-xs px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium flex items-center gap-1" title="通信・APIキー設定">
+          <i data-lucide="cloud-lightning" class="w-3.5 h-3.5 text-sky-500"></i>
+          <span class="hidden sm:inline">API設定</span>
+        </button>
+
         <button onclick="clearAllData()" class="text-xs px-2 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition font-medium flex items-center gap-1" title="全データクリア">
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
         </button>
@@ -140,7 +145,7 @@
           </label>
         </div>
         <div class="flex gap-2">
-          <input type="text" id="startLocationInput" placeholder="例: 東京本社（または最寄り駅・住所）" value="東京駅" 
+          <input type="text" id="startLocationInput" placeholder="例: 越谷駅（または社名・住所）" value="越谷駅" 
                  class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"
                  onchange="updateStartLocation(this.value)">
         </div>
@@ -180,7 +185,7 @@
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
             <div class="md:col-span-5">
               <label class="block text-xs font-semibold text-slate-600 mb-1">訪問先名・住所 <span class="text-rose-500">*</span></label>
-              <input type="text" id="inputSpotName" required placeholder="例: 株式会社サンプル / 東京都千代田区1-1" 
+              <input type="text" id="inputSpotName" required placeholder="例: 株式会社サンプル / 埼玉県越谷市..." 
                      class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
             </div>
             <div class="md:col-span-2">
@@ -254,7 +259,6 @@
           </button>
         </div>
 
-        <!-- Dynamic Spot List Container -->
         <div id="planSpotList" class="space-y-3">
           <!-- JS Rendered -->
         </div>
@@ -297,7 +301,6 @@
           </div>
         </div>
 
-        <!-- Generated Text Area -->
         <textarea id="reportTextArea" class="w-full h-80 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed resize-y" placeholder="日報データがありません"></textarea>
 
         <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
@@ -343,13 +346,52 @@
     </div>
   </div>
 
+  <!-- API Key & Worker Modal -->
+  <div id="apiKeyModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+          <i data-lucide="cloud-lightning" class="w-5 h-5 text-sky-500"></i>
+          通信・Worker API設定
+        </h3>
+        <button onclick="hideApiKeyModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Cloudflare Workers経由で安全にAIターゲット抽出を実行します。デフォルトで設定済みのWorkerに接続されます。
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Cloudflare Worker URL</label>
+          <input type="text" id="cfWorkerUrlInput" placeholder="https://hou-repo.yymmatsu.workers.dev" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono">
+          <p class="text-[10px] text-slate-400 mt-1">※デフォルトで hou-repo.yymmatsu.workers.dev に接続されます</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">直通 Gemini API Key (任意)</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="直接APIキーを使用する場合のみ入力" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button onclick="hideApiKeyModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">
+          キャンセル
+        </button>
+        <button onclick="saveApiKey()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md">
+          設定を保存
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let appData = {
-      startLocation: '東京駅',
+      startLocation: '越谷駅',
       spots: []
     };
 
-    // Helper for Rank Colors
     function getRankBadgeHtml(rank) {
       const r = rank || 'B';
       const map = {
@@ -363,7 +405,6 @@
       return `<span class="border text-[10px] font-bold px-2 py-0.5 rounded-md ${colorClass}">ランク ${r}</span>`;
     }
 
-    // Initialize App
     window.addEventListener('DOMContentLoaded', () => {
       loadStateFromStorage();
       renderAllViews();
@@ -371,7 +412,6 @@
       lucide.createIcons();
     });
 
-    // Save & Load LocalStorage
     function saveStateToStorage() {
       localStorage.setItem('visit_app_data_v3', JSON.stringify(appData));
       checkFollowupAlerts();
@@ -382,7 +422,7 @@
       if (saved) {
         try {
           appData = JSON.parse(saved);
-          document.getElementById('startLocationInput').value = appData.startLocation || '東京駅';
+          document.getElementById('startLocationInput').value = appData.startLocation || '越谷駅';
         } catch(e) {
           console.error("Failed to parse storage", e);
         }
@@ -395,7 +435,15 @@
       showToast('出発地点を更新しました');
     }
 
-    // Tab Switcher
+    function clearAllData() {
+      if (confirm('すべての訪問先データを消去しますか？')) {
+        appData.spots = [];
+        saveStateToStorage();
+        renderAllViews();
+        showToast('全データをクリアしました');
+      }
+    }
+
     function switchTab(tabKey) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -472,7 +520,6 @@
       renderAllViews();
     }
 
-    // Route Mapping
     function openGoogleMapsRoute() {
       if (appData.spots.length === 0) {
         showToast('訪問先を1件以上登録してください', 'warning');
@@ -547,7 +594,7 @@
         parseAndLoadCsv(content);
       };
       reader.readAsText(file, 'UTF-8');
-      event.target.value = ''; // reset
+      event.target.value = '';
     }
 
     function parseAndLoadCsv(csvText) {
@@ -558,12 +605,10 @@
       }
 
       let count = 0;
-      // Skip header line
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Simple CSV splitter handling quoted cells
         const cols = line.split(',').map(col => col.replace(/^"|"$/g, '').trim());
         if (cols[0]) {
           appData.spots.push({
@@ -612,7 +657,7 @@
         csvRows.push(row.join(','));
       });
 
-      const csvString = '\uFEFF' + csvRows.join('\r\n'); // Add UTF-8 BOM
+      const csvString = '\uFEFF' + csvRows.join('\r\n');
       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -689,18 +734,49 @@
       document.getElementById('followupModal').classList.add('hidden');
     }
 
+    function showApiKeyModal() {
+      const currentWorker = localStorage.getItem('cf_worker_url') || 'https://hou-repo.yymmatsu.workers.dev';
+      const currentKey = localStorage.getItem('gemini_api_key') || '';
+      document.getElementById('cfWorkerUrlInput').value = currentWorker;
+      document.getElementById('geminiApiKeyInput').value = currentKey;
+      document.getElementById('apiKeyModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function hideApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.add('hidden');
+    }
+
+    function saveApiKey() {
+      const workerInput = document.getElementById('cfWorkerUrlInput').value.trim();
+      const keyInput = document.getElementById('geminiApiKeyInput').value.trim();
+
+      if (workerInput) {
+        localStorage.setItem('cf_worker_url', workerInput);
+      } else {
+        localStorage.removeItem('cf_worker_url');
+      }
+
+      if (keyInput) {
+        localStorage.setItem('gemini_api_key', keyInput);
+      } else {
+        localStorage.removeItem('gemini_api_key');
+      }
+
+      showToast('API通信設定を保存しました');
+      hideApiKeyModal();
+    }
+
     function renderAllViews() {
-      // Update badge
       document.getElementById('badge-plan-count').innerText = appData.spots.length;
 
-      // Render Plan Tab List
       const planContainer = document.getElementById('planSpotList');
       if (appData.spots.length === 0) {
         planContainer.innerHTML = `
           <div class="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
             <i data-lucide="map-pin-off" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
             <p class="text-sm font-medium text-slate-500">まだ訪問先が設定されていません</p>
-            <p class="text-xs text-slate-400 mt-1">上のフォームまたは「CSV取込」から予定を追加してください</p>
+            <p class="text-xs text-slate-400 mt-1">「AIエリアターゲット自動抽出」または手動で予定を追加してください</p>
           </div>
         `;
       } else {
@@ -747,7 +823,6 @@
         `).join('');
       }
 
-      // Render Execute Tab List
       const executeContainer = document.getElementById('executeSpotList');
       if (appData.spots.length === 0) {
         executeContainer.innerHTML = `
@@ -786,7 +861,6 @@
                 ${statusBadge}
               </div>
 
-              <!-- Action Buttons -->
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
                 <button onclick="openSingleMap('${escapeHtml(spot.name)}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
                   <i data-lucide="navigation" class="w-3.5 h-3.5 text-brand-600"></i>
@@ -804,7 +878,6 @@
                 </button>
               </div>
 
-              <!-- Live Edit Fields: Rank, Memo, Next Action -->
               <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-slate-100">
                 <div class="md:col-span-3">
                   <label class="block text-[10px] font-bold text-slate-500 mb-1">見込みランク更新</label>
@@ -860,7 +933,6 @@
       const completedCount = completedSpots.length;
       document.getElementById('reportSummaryText').innerText = `全${appData.spots.length}件中、${completedCount}件訪問完了`;
 
-      // Rank Count
       const rankCounts = { S: 0, A: 0, B: 0, C: 0, NG: 0 };
       appData.spots.forEach(s => {
         const r = s.rank || 'B';
@@ -955,67 +1027,41 @@
       const nextWeekStr = nextWeek.toISOString().slice(0, 10);
 
       appData = {
-        startLocation: '東京駅 八重洲口',
+        startLocation: '越谷駅 東口',
         spots: [
           {
             id: 'sample_1',
-            name: '株式会社大手町パートナーズ / 東京都千代田区大手町1-1',
+            name: '越谷パートナーズ税理士法人 (埼玉県越谷市赤山町1-1)',
+            category: '新規開拓商談',
             rank: 'S',
             duration: 45,
-            category: '新規開拓商談',
             arrivalTime: '10:00',
             departureTime: '10:45',
             status: 'completed',
-            memo: '役員面談。前向きに検討。次回見積もり送付予定。',
+            memo: '所長税理士様と面談完了。次回見積提示。',
             nextActionDate: nextWeekStr,
-            nextActionMemo: '見積書・提案書の送付メールと電話フォロー'
+            nextActionMemo: '修正見積書をメール送付後にフォローTEL'
           },
           {
             id: 'sample_2',
-            name: '日本橋ソリューションズ / 東京都中央区日本橋2-2',
-            rank: 'B',
-            duration: 30,
-            category: '既存フォロー',
-            arrivalTime: '11:15',
-            departureTime: '11:50',
-            status: 'completed',
-            memo: '運用状況のヒアリング。現状トラブルなし。',
-            nextActionDate: '',
-            nextActionMemo: ''
-          },
-          {
-            id: 'sample_3',
-            name: '新橋ファシリティーズ / 東京都港区新橋3-3',
-            rank: 'A',
-            duration: 60,
+            name: '武蔵野会計事務所 (埼玉県越谷市南越谷2-1)',
             category: '新規開拓商談',
-            arrivalTime: '14:00',
-            departureTime: null,
-            status: 'in_progress',
-            memo: '現場課題のヒアリング中。導入ハードル低め。',
-            nextActionDate: today.toISOString().slice(0, 10),
-            nextActionMemo: '本日中に補足資料をメールで送付する'
+            rank: 'A',
+            duration: 30,
+            arrivalTime: '11:15',
+            departureTime: '11:45',
+            status: 'completed',
+            memo: '副所長様と面談。パンフレット受取完了。',
+            nextActionDate: nextWeekStr,
+            nextActionMemo: '資料送付およびフォローTEL'
           }
         ]
       };
-      document.getElementById('startLocationInput').value = appData.startLocation;
       saveStateToStorage();
       renderAllViews();
       showToast('サンプルデータを読み込みました');
     }
 
-    function clearAllData() {
-      appData = {
-        startLocation: '東京駅',
-        spots: []
-      };
-      document.getElementById('startLocationInput').value = '東京駅';
-      saveStateToStorage();
-      renderAllViews();
-      showToast('データを全削除しました');
-    }
-
-    // AI Area Search Function
     async function handleAiSearch() {
       const keywordInput = document.getElementById('aiSearchInput');
       const keyword = keywordInput.value.trim();
@@ -1031,31 +1077,62 @@
       lucide.createIcons();
 
       try {
-        const apiKey = "";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+        let workerUrl = localStorage.getItem('cf_worker_url') || 'https://hou-repo.yymmatsu.workers.dev';
+        let apiKey = localStorage.getItem('gemini_api_key') || "";
+
+        let res, result;
 
         const systemPrompt = "あなたは営業アプローチ支援アシスタントです。ユーザー指定の検索キーワード（例: 越谷市 税理士事務所）に基づいて、実在する評価の高い上位5件の事業所名と住所・エリア情報を取得し、指定のJSON形式でのみレスポンスを返してください。";
         const userQuery = `「${keyword}」の上位5件の事業所名と住所・概要を取得してください。JSON配列の形式のみで返してください。フォーマット: [{"name": "〇〇税理士事務所", "address": "埼玉県越谷市...", "category": "税理士事務所"}]`;
 
-        const payload = {
+        const geminiPayload = {
           contents: [{ parts: [{ text: userQuery }] }],
           tools: [{ "google_search": {} }],
           systemInstruction: { parts: [{ text: systemPrompt }] }
         };
 
-        const res = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        if (workerUrl && !apiKey) {
+          let endpoint = workerUrl.startsWith('http') ? workerUrl : `https://${workerUrl}`;
+          res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              keyword: keyword,
+              ...geminiPayload
+            })
+          });
+          result = await res.json();
+        } else {
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+          res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(geminiPayload)
+          });
+          result = await res.json();
+        }
 
-        const result = await res.json();
-        const candidateText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (result.error) {
+          showApiKeyModal();
+          showToast(`通信エラー: ${result.error.message || result.error}`, 'warning');
+          return;
+        }
 
-        // Extract JSON array from LLM response
-        const jsonMatch = candidateText.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const items = JSON.parse(jsonMatch[0]);
+        let items = null;
+        if (Array.isArray(result)) {
+          items = result;
+        } else if (result.items && Array.isArray(result.items)) {
+          items = result.items;
+        } else if (result.candidates) {
+          const candidateText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          let cleanedText = candidateText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const jsonMatch = cleanedText.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            items = JSON.parse(jsonMatch[0]);
+          }
+        }
+
+        if (items && Array.isArray(items) && items.length > 0) {
           let addedCount = 0;
 
           items.forEach(item => {
@@ -1086,13 +1163,13 @@
             showToast('事業所の抽出に失敗しました', 'warning');
           }
         } else {
-          // Fallback if structured parsing failed
-          showToast('検索結果の解析に失敗しました。キーワードを変えてお試しください。', 'warning');
+          showToast('検索結果の解析に失敗しました。「地域名 業種名」でお試しください。', 'warning');
         }
 
       } catch (err) {
         console.error("AI Search error:", err);
-        showToast('AI検索処理中にエラーが発生しました', 'warning');
+        showApiKeyModal();
+        showToast('Worker接続エラーが発生しました。設定を確認してください。', 'warning');
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
