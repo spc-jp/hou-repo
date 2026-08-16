@@ -341,11 +341,14 @@
     </div>
   </div>
 
+  <!-- JavaScript Logic -->
   <script>
     let appData = {
       startLocation: '越谷駅',
       spots: []
     };
+
+    const WORKER_URL = 'https://hou-repo.yymmatsu.workers.dev';
 
     function getRankBadgeHtml(rank) {
       const r = rank || 'B';
@@ -689,39 +692,6 @@
       document.getElementById('followupModal').classList.add('hidden');
     }
 
-    function showApiKeyModal() {
-      const currentWorker = localStorage.getItem('cf_worker_url') || 'https://hou-repo.yymmatsu.workers.dev';
-      const currentKey = localStorage.getItem('gemini_api_key') || '';
-      document.getElementById('cfWorkerUrlInput').value = currentWorker;
-      document.getElementById('geminiApiKeyInput').value = currentKey;
-      document.getElementById('apiKeyModal').classList.remove('hidden');
-      lucide.createIcons();
-    }
-
-    function hideApiKeyModal() {
-      document.getElementById('apiKeyModal').classList.add('hidden');
-    }
-
-    function saveApiKey() {
-      const workerInput = document.getElementById('cfWorkerUrlInput').value.trim();
-      const keyInput = document.getElementById('geminiApiKeyInput').value.trim();
-
-      if (workerInput) {
-        localStorage.setItem('cf_worker_url', workerInput);
-      } else {
-        localStorage.removeItem('cf_worker_url');
-      }
-
-      if (keyInput) {
-        localStorage.setItem('gemini_api_key', keyInput);
-      } else {
-        localStorage.removeItem('gemini_api_key');
-      }
-
-      showToast('API通信設定を保存しました');
-      hideApiKeyModal();
-    }
-
     function renderAllViews() {
       document.getElementById('badge-plan-count').innerText = appData.spots.length;
 
@@ -1032,43 +1002,17 @@
       lucide.createIcons();
 
       try {
-        let workerUrl = localStorage.getItem('cf_worker_url') || 'https://hou-repo.yymmatsu.workers.dev';
-        let apiKey = localStorage.getItem('gemini_api_key') || "";
+        const res = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyword: keyword })
+        });
 
-        let res, result;
-
-        const systemPrompt = "あなたは営業アプローチ支援アシスタントです。ユーザー指定の検索キーワード（例: 越谷市 税理士事務所）に基づいて、実在する評価の高い上位5件の事業所名と住所・エリア情報を取得し、指定のJSON形式でのみレスポンスを返してください。";
-        const userQuery = `「${keyword}」の上位5件の事業所名と住所・概要を取得してください。JSON配列の形式のみで返してください。フォーマット: [{"name": "〇〇税理士事務所", "address": "埼玉県越谷市...", "category": "税理士事務所"}]`;
-
-        const geminiPayload = {
-          contents: [{ parts: [{ text: userQuery }] }],
-          tools: [{ "google_search": {} }],
-          systemInstruction: { parts: [{ text: systemPrompt }] }
-        };
-
-        if (workerUrl && !apiKey) {
-          let endpoint = workerUrl.startsWith('http') ? workerUrl : `https://${workerUrl}`;
-          res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              keyword: keyword,
-              ...geminiPayload
-            })
-          });
-          result = await res.json();
-        } else {
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-          res = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiPayload)
-          });
-          result = await res.json();
-        }
+        const result = await res.json();
 
         if (result.error) {
-          showToast(`通信エラー: ${result.error.message || result.error}`, 'warning');
+          const errMsg = typeof result.error === 'string' ? result.error : (result.error.message || '通信エラー');
+          showToast(`通信エラー: ${errMsg}`, 'warning');
           return;
         }
 
@@ -1082,7 +1026,11 @@
           let cleanedText = candidateText.replace(/```json/g, '').replace(/```/g, '').trim();
           const jsonMatch = cleanedText.match(/\[[\s\S]*\]/);
           if (jsonMatch) {
-            items = JSON.parse(jsonMatch[0]);
+            try {
+              items = JSON.parse(jsonMatch[0]);
+            } catch(e) {
+              console.error("JSON parse error:", e);
+            }
           }
         }
 
